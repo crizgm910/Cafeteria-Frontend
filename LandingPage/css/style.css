@@ -833,19 +833,23 @@ a {
     color: #555;
 }
 
-/* Login Modal & Icons */
-.icon-btn {
-    background: none;
-    border: none;
-    color: var(--color-beige);
-    font-size: 1.5rem;
+/* Login Modal & Button */
+.login-text-btn {
+    background: transparent;
+    border: 1px solid var(--color-gold);
+    color: var(--color-gold);
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    font-family: var(--font-body);
+    border-radius: 4px;
     cursor: pointer;
     transition: var(--transition);
 }
 
-.icon-btn:hover {
-    color: var(--color-gold);
-    transform: scale(1.1);
+.login-text-btn:hover {
+    background: var(--color-gold);
+    color: var(--color-coffee-dark);
 }
 
 .modal-input {

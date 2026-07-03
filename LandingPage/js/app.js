@@ -342,7 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         alert('¡Bienvenido al Gentlemen\'s Club! Su sesión ha sido iniciada.');
         loginModal.classList.remove('open');
-        btnLoginModal.innerHTML = '👑'; // Cambiar ícono para simular sesión iniciada
+        btnLoginModal.innerHTML = 'ACCESO (✓)'; 
+        btnLoginModal.style.background = 'var(--color-gold)';
+        btnLoginModal.style.color = 'var(--color-coffee-dark)';
     };
     
     // Reservation Form Handler

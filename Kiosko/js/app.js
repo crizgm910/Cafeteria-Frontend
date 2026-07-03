@@ -62,8 +62,13 @@ function renderProducts(category) {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
+            <div class="card-corner top-left">
+                <span>⭐</span>
+            </div>
+            <div class="card-art">
+                <img src="img/coffee.png" alt="Art">
+            </div>
             <div class="card-title">${product.name}</div>
-            <div class="card-desc">${product.description || ''}</div>
             <div class="card-price">$${parseFloat(product.price).toFixed(2)}</div>
         `;
         card.onclick = () => openProductModal(product);

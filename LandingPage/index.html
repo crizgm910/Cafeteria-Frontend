@@ -75,6 +75,13 @@
                     <span class="search-icon">🔍</span>
                     <input type="text" id="menu-search-input" placeholder="Buscar notas de cata, bebidas...">
                 </div>
+                <div class="menu-sort-wrapper">
+                    <select id="menu-sort-select">
+                        <option value="default">Recomendados</option>
+                        <option value="asc">Menor Precio</option>
+                        <option value="desc">Mayor Precio</option>
+                    </select>
+                </div>
             </div>
 
             <div class="menu-filters" id="menu-filters">
@@ -336,8 +343,14 @@
                 <button id="btn-close-profile" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="modal-subtitle">Historial de Tazas Degustadas</p>
-                <div class="journal-list">
+                <div class="profile-tabs">
+                    <button class="profile-tab active" id="tab-journal">Diario de Degustación</button>
+                    <button class="profile-tab" id="tab-orders">Historial de Pedidos</button>
+                </div>
+                
+                <div id="journal-view">
+                    <p class="modal-subtitle">Tazas Degustadas</p>
+                    <div class="journal-list">
                     <!-- Journal Item 1 -->
                     <div class="journal-item">
                         <div class="journal-header">
@@ -374,6 +387,14 @@
                             </div>
                         </div>
                         <textarea class="journal-notes" placeholder="Agregue sus notas de cata personales...">Impresionante el toque a madera. Pedirlo sin hielo la próxima vez para mayor intensidad.</textarea>
+                    </div>
+                </div>
+                </div>
+
+                <div id="orders-view" style="display:none;">
+                    <p class="modal-subtitle">Pedidos Recientes</p>
+                    <div class="journal-list" id="order-history-list">
+                        <p style="color:var(--color-beige); opacity:0.5;">No hay pedidos recientes.</p>
                     </div>
                 </div>
             </div>

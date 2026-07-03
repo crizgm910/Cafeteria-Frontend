@@ -55,6 +55,11 @@ const loginForm = document.getElementById('login-form');
 // Profile / Journal Elements
 const profileModal = document.getElementById('profile-modal');
 const btnCloseProfile = document.getElementById('btn-close-profile');
+const tabJournal = document.getElementById('tab-journal');
+const tabOrders = document.getElementById('tab-orders');
+const journalView = document.getElementById('journal-view');
+const ordersView = document.getElementById('orders-view');
+const orderHistoryList = document.getElementById('order-history-list');
 const btnLogout = document.getElementById('btn-logout');
 
 let isLoggedIn = false;
@@ -123,22 +128,46 @@ function renderFilters() {
         // Render fake category para resultados
         renderMenuCategory({ name: 'Resultados', products: allFilteredProducts }, true);
     });
+
+    // Sort Event
+    const sortSelect = document.getElementById('menu-sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            if (currentActiveCategory) {
+                renderMenuCategory(currentActiveCategory, false, e.target.value);
+            }
+        });
+    }
 }
 
-function renderMenuCategory(category, isSearch = false) {
+function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
     if (!isSearch) currentActiveCategory = category;
     
     menuGrid.style.opacity = '0';
     
+    // Sort array copy
+    let productsToRender = [...category.products];
+    if (sortOrder === 'asc') {
+        productsToRender.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+    } else if (sortOrder === 'desc') {
+        productsToRender.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    }
+    
     setTimeout(() => {
         menuGrid.innerHTML = '';
         
-        category.products.forEach(product => {
+        productsToRender.forEach(product => {
             const item = document.createElement('div');
             item.className = 'menu-item';
+            
+            // Faux Badges
+            let badgeHtml = '';
+            if (product.id % 5 === 0) badgeHtml = '<span class="product-badge badge-premium">Premium</span>';
+            else if (product.id % 3 === 0) badgeHtml = '<span class="product-badge badge-nuevo">Nuevo</span>';
+
             item.innerHTML = `
                 <div class="menu-item-info" onclick="openAddonModal(${product.id})">
-                    <h4>${product.name}</h4>
+                    <h4>${product.name} ${badgeHtml}</h4>
                     <p>${product.description || 'Nuestra mezcla especial de la casa.'}</p>
                 </div>
                 <div class="menu-item-price">
@@ -443,6 +472,15 @@ btnPay.onclick = async () => {
             successOrderId.textContent = orderNum;
             successOrderTotal.textContent = cartTotalEl.textContent;
             
+            // Guardar en LocalStorage (Historial de Pedidos)
+            saveOrderToHistory({
+                id: orderNum,
+                date: new Date().toLocaleDateString(),
+                total: cartTotalEl.textContent,
+                status: 'Preparando',
+                items: cart.map(item => `${item.quantity}x ${item.product.name}`).join(', ')
+            });
+            
             // Show Success Modal
             successModal.classList.add('open');
             cartSidebar.classList.remove('open');
@@ -488,6 +526,54 @@ function showToast(message) {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 400);
     }, 3000);
+}
+
+// Profile Tabs Logic
+tabJournal.onclick = () => {
+    tabJournal.classList.add('active');
+    tabOrders.classList.remove('active');
+    journalView.style.display = 'block';
+    ordersView.style.display = 'none';
+};
+
+tabOrders.onclick = () => {
+    tabOrders.classList.add('active');
+    tabJournal.classList.remove('active');
+    ordersView.style.display = 'block';
+    journalView.style.display = 'none';
+    renderOrderHistory();
+};
+
+function saveOrderToHistory(order) {
+    let history = JSON.parse(localStorage.getItem('tgr_orders') || '[]');
+    history.unshift(order);
+    localStorage.setItem('tgr_orders', JSON.stringify(history));
+}
+
+function renderOrderHistory() {
+    let history = JSON.parse(localStorage.getItem('tgr_orders') || '[]');
+    if (history.length === 0) {
+        orderHistoryList.innerHTML = '<p style="color:var(--color-beige); opacity:0.5;">No hay pedidos recientes.</p>';
+        return;
+    }
+    
+    orderHistoryList.innerHTML = '';
+    history.forEach(order => {
+        orderHistoryList.innerHTML += `
+            <div class="journal-item">
+                <div class="journal-header">
+                    <h4>${order.id}</h4>
+                    <span>${order.date}</span>
+                </div>
+                <div class="order-items">${order.items}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="order-status">${order.status}</span>
+                    <span style="color:var(--color-gold); font-family:var(--font-heading); font-size:1.2rem;">${order.total}</span>
+                </div>
+                <button class="login-text-btn w-100" style="margin-top:15px; width:100%;" onclick="showToast('Agregando a la cuenta...')">Pedir de nuevo</button>
+            </div>
+        `;
+    });
 }
 
 // Inicializar

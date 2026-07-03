@@ -4,6 +4,25 @@ const menuFilters = document.getElementById('menu-filters');
 const menuGrid = document.getElementById('menu-grid');
 
 let menuData = [];
+let cart = [];
+let currentSelectedProduct = null;
+
+// Cart UI Elements
+const cartBtn = document.getElementById('cart-floating-btn');
+const cartBadge = document.getElementById('cart-badge');
+const cartSidebar = document.getElementById('cart-sidebar');
+const closeCartBtn = document.getElementById('close-cart-btn');
+const cartItemsContainer = document.getElementById('cart-items');
+const cartTotalEl = document.getElementById('cart-total');
+const btnPay = document.getElementById('btn-pay');
+
+// Modal Elements
+const addonModal = document.getElementById('addon-modal');
+const btnCancelAddon = document.getElementById('btn-cancel-addon');
+const btnConfirmAddon = document.getElementById('btn-confirm-addon');
+const modalProductName = document.getElementById('modal-product-name');
+const modalAddons = document.getElementById('modal-addons');
+const modalNotes = document.getElementById('modal-notes');
 
 async function initMenu() {
     try {
@@ -33,11 +52,8 @@ function renderFilters() {
         if (index === 0) btn.classList.add('active');
         
         btn.onclick = () => {
-            // Remover active de todos
             document.querySelectorAll('.menu-filters button').forEach(b => b.classList.remove('active'));
-            // Agregar al clickeado
             btn.classList.add('active');
-            
             renderMenuCategory(category);
         };
         
@@ -46,7 +62,6 @@ function renderFilters() {
 }
 
 function renderMenuCategory(category) {
-    // Animación suave de transición
     menuGrid.style.opacity = '0';
     
     setTimeout(() => {
@@ -64,6 +79,8 @@ function renderMenuCategory(category) {
                     $${parseFloat(product.price).toFixed(2)}
                 </div>
             `;
+            // Abrir modal al hacer clic en el platillo
+            item.onclick = () => openAddonModal(product);
             menuGrid.appendChild(item);
         });
         
@@ -72,7 +89,171 @@ function renderMenuCategory(category) {
     }, 200);
 }
 
-// Inicializar el menú al cargar la página
+/* ==========================================
+   KIOSK LOGIC (Cart, Modal & Checkout)
+   ========================================== */
+
+function openAddonModal(product) {
+    currentSelectedProduct = product;
+    modalProductName.textContent = product.name;
+    modalNotes.value = '';
+    modalAddons.innerHTML = '';
+    
+    if (product.addons && product.addons.length > 0) {
+        product.addons.forEach(addon => {
+            const label = document.createElement('label');
+            label.className = 'addon-label';
+            label.innerHTML = `
+                <input type="checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${addon.price}">
+                <span>${addon.name}</span>
+                <span class="addon-price">+$${parseFloat(addon.price).toFixed(2)}</span>
+            `;
+            modalAddons.appendChild(label);
+        });
+    } else {
+        modalAddons.innerHTML = '<p style="color: var(--color-beige); opacity: 0.5;">No hay complementos disponibles para este producto.</p>';
+    }
+
+    addonModal.classList.add('open');
+}
+
+function closeAddonModal() {
+    addonModal.classList.remove('open');
+    currentSelectedProduct = null;
+}
+
+btnCancelAddon.onclick = closeAddonModal;
+
+btnConfirmAddon.onclick = () => {
+    if (!currentSelectedProduct) return;
+
+    const selectedAddons = [];
+    const checkboxes = modalAddons.querySelectorAll('input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(cb => {
+        selectedAddons.push({
+            id: cb.value,
+            name: cb.dataset.name,
+            price: parseFloat(cb.dataset.price)
+        });
+    });
+
+    const notes = modalNotes.value.trim();
+
+    cart.push({
+        product: currentSelectedProduct,
+        addons: selectedAddons,
+        notes: notes
+    });
+
+    closeAddonModal();
+    updateCartUI();
+    
+    // Auto-abrir el carrito para dar feedback visual
+    cartSidebar.classList.add('open');
+};
+
+function updateCartUI() {
+    cartBadge.textContent = cart.length;
+    
+    if (cart.length === 0) {
+        cartItemsContainer.innerHTML = '<div class="empty-cart-msg">Aún no ha seleccionado nada.</div>';
+        cartTotalEl.textContent = '$0.00';
+        btnPay.disabled = true;
+        return;
+    }
+
+    cartItemsContainer.innerHTML = '';
+    let total = 0;
+
+    cart.forEach((item, index) => {
+        let itemTotal = parseFloat(item.product.price);
+        let addonsHtml = '';
+        
+        if (item.addons.length > 0) {
+            const addonsText = item.addons.map(a => {
+                itemTotal += a.price;
+                return a.name;
+            }).join(', ');
+            addonsHtml = `<div class="cart-item-meta">+ ${addonsText}</div>`;
+        }
+
+        if (item.notes) {
+            addonsHtml += `<div class="cart-item-meta" style="font-style:italic">Nota: ${item.notes}</div>`;
+        }
+
+        total += itemTotal;
+
+        const el = document.createElement('div');
+        el.className = 'cart-item';
+        el.innerHTML = `
+            <div class="cart-item-header">
+                <h4>${item.product.name}</h4>
+                <span class="price">$${itemTotal.toFixed(2)}</span>
+            </div>
+            ${addonsHtml}
+            <button class="btn-remove" onclick="removeFromCart(${index})">Eliminar</button>
+        `;
+        cartItemsContainer.appendChild(el);
+    });
+
+    cartTotalEl.textContent = `$${total.toFixed(2)}`;
+    btnPay.disabled = false;
+}
+
+window.removeFromCart = function(index) {
+    cart.splice(index, 1);
+    updateCartUI();
+};
+
+cartBtn.onclick = () => cartSidebar.classList.add('open');
+closeCartBtn.onclick = () => cartSidebar.classList.remove('open');
+
+btnPay.onclick = async () => {
+    if (cart.length === 0) return;
+    
+    btnPay.disabled = true;
+    btnPay.textContent = 'Procesando...';
+
+    const payload = {
+        items: cart.map(item => ({
+            product_id: item.product.id,
+            quantity: 1,
+            notes: item.notes || null,
+            addons: item.addons.map(a => a.id)
+        }))
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/checkout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert('¡Pedido exclusivo registrado con éxito! Su orden está siendo preparada.');
+            cart = [];
+            updateCartUI();
+            cartSidebar.classList.remove('open');
+        } else {
+            alert('Error en la orden: ' + (result.message || 'Fondos/Inventario insuficiente.'));
+        }
+    } catch (error) {
+        console.error('Error Checkout:', error);
+        alert('Ocurrió un error al procesar el pago.');
+    } finally {
+        btnPay.textContent = 'Finalizar Pedido';
+        if (cart.length > 0) btnPay.disabled = false;
+    }
+};
+
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     initMenu();
     
@@ -86,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 window.scrollTo({
-                    top: targetElement.offsetTop - 80, // Ajuste por la barra de navegación fija
+                    top: targetElement.offsetTop - 80,
                     behavior: 'smooth'
                 });
             }

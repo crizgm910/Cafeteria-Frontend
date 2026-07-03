@@ -156,6 +156,50 @@
         </div>
     </footer>
 
+    <!-- Cart Floating Button -->
+    <button class="cart-floating-btn" id="cart-floating-btn">
+        <span>Su Cuenta</span>
+        <div class="cart-badge" id="cart-badge">0</div>
+    </button>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-sidebar-header">
+            <h2>Su Cuenta</h2>
+            <button id="close-cart-btn" class="close-btn">&times;</button>
+        </div>
+        <div class="cart-sidebar-items" id="cart-items">
+            <div class="empty-cart-msg">Aún no ha seleccionado nada.</div>
+        </div>
+        <div class="cart-sidebar-footer">
+            <div class="cart-total-row">
+                <span>Total</span>
+                <span id="cart-total">$0.00</span>
+            </div>
+            <button id="btn-pay" class="btn-primary w-100" disabled>Finalizar Pedido</button>
+        </div>
+    </div>
+
+    <!-- Addon Modal -->
+    <div class="modal-overlay" id="addon-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="modal-product-name">Producto</h3>
+                <button id="btn-cancel-addon" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Personalice su selección:</p>
+                <div id="modal-addons" class="modal-addon-list">
+                    <!-- Checkboxes de complementos -->
+                </div>
+                <textarea id="modal-notes" class="modal-textarea" placeholder="Instrucciones especiales (ej. Sin hielo)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-confirm-addon" class="btn-primary w-100">Agregar a la Cuenta</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/app.js"></script>
 </body>
 </html>

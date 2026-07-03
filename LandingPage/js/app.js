@@ -26,6 +26,25 @@ const modalProductName = document.getElementById('modal-product-name');
 const modalAddons = document.getElementById('modal-addons');
 const modalNotes = document.getElementById('modal-notes');
 const modalTastingNotes = document.getElementById('modal-tasting-notes');
+const modalVariants = document.getElementById('modal-variants');
+const modalDynamicPrice = document.getElementById('modal-dynamic-price');
+
+// Checkout Fields
+const checkoutName = document.getElementById('checkout-name');
+const checkoutPhone = document.getElementById('checkout-phone');
+const checkoutEmail = document.getElementById('checkout-email');
+const checkoutAddressGroup = document.getElementById('checkout-address-group');
+const checkoutAddress = document.getElementById('checkout-address');
+
+// Success Modal
+const successModal = document.getElementById('success-modal');
+const btnCloseSuccess = document.getElementById('btn-close-success');
+const btnSuccessClose = document.getElementById('btn-success-close');
+const successOrderId = document.getElementById('success-order-id');
+const successOrderTotal = document.getElementById('success-order-total');
+
+// Toasts
+const toastContainer = document.getElementById('toast-container');
 
 // Login Elements
 const loginModal = document.getElementById('login-modal');
@@ -118,22 +137,34 @@ function renderMenuCategory(category, isSearch = false) {
             const item = document.createElement('div');
             item.className = 'menu-item';
             item.innerHTML = `
-                <div class="menu-item-info">
+                <div class="menu-item-info" onclick="openAddonModal(${product.id})">
                     <h4>${product.name}</h4>
                     <p>${product.description || 'Nuestra mezcla especial de la casa.'}</p>
                 </div>
                 <div class="menu-item-price">
                     $${parseFloat(product.price).toFixed(2)}
                 </div>
+                <button class="btn-favorite" onclick="toggleFavorite(this, event)">♡</button>
             `;
-            // Abrir modal al hacer clic en el platillo
-            item.onclick = () => openAddonModal(product);
             menuGrid.appendChild(item);
         });
         
         menuGrid.style.opacity = '1';
         menuGrid.style.transition = 'opacity 0.4s ease';
     }, 200);
+}
+
+function toggleFavorite(btn, event) {
+    event.stopPropagation();
+    if (btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        btn.textContent = '♡';
+        showToast('Producto eliminado de favoritos');
+    } else {
+        btn.classList.add('active');
+        btn.textContent = '♥';
+        showToast('Producto guardado en favoritos');
+    }
 }
 
 /* ==========================================
@@ -171,7 +202,7 @@ function openAddonModal(product) {
             const label = document.createElement('label');
             label.className = 'addon-label';
             label.innerHTML = `
-                <input type="checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${addon.price}">
+                <input type="checkbox" class="addon-checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${addon.price}">
                 <span>${addon.name}</span>
                 <span class="addon-price">+$${parseFloat(addon.price).toFixed(2)}</span>
             `;
@@ -181,7 +212,41 @@ function openAddonModal(product) {
         modalAddons.innerHTML = '<p style="color: var(--color-beige); opacity: 0.5;">No hay complementos disponibles para este producto.</p>';
     }
 
+    // Reset variants
+    document.querySelector('input[name="size"][value="regular"]').checked = true;
+    document.querySelector('input[name="milk"][value="entera"]').checked = true;
+    modalVariants.style.display = 'block'; // Mostrar variantes siempre para simular
+
+    calculateDynamicPrice();
+    
+    // Attach listeners for dynamic price
+    document.querySelectorAll('.addon-checkbox, input[name="size"], input[name="milk"]').forEach(input => {
+        input.addEventListener('change', calculateDynamicPrice);
+    });
+
     addonModal.classList.add('open');
+}
+
+function calculateDynamicPrice() {
+    if (!currentSelectedProduct) return;
+    
+    let basePrice = parseFloat(currentSelectedProduct.price);
+    
+    // Size Price
+    const selectedSize = document.querySelector('input[name="size"]:checked');
+    if (selectedSize) basePrice += parseFloat(selectedSize.dataset.price);
+    
+    // Milk Price
+    const selectedMilk = document.querySelector('input[name="milk"]:checked');
+    if (selectedMilk) basePrice += parseFloat(selectedMilk.dataset.price);
+    
+    // Addons
+    const selectedAddons = document.querySelectorAll('.addon-checkbox:checked');
+    selectedAddons.forEach(cb => {
+        basePrice += parseFloat(cb.dataset.price);
+    });
+    
+    modalDynamicPrice.textContent = `$${basePrice.toFixed(2)}`;
 }
 
 function closeAddonModal() {
@@ -205,19 +270,47 @@ btnConfirmAddon.onclick = () => {
         });
     });
 
+    const selectedSize = document.querySelector('input[name="size"]:checked');
+    const selectedMilk = document.querySelector('input[name="milk"]:checked');
+    
+    let variantName = "";
+    let extraPrice = 0;
+    
+    if (selectedSize && selectedSize.value !== "regular") {
+        variantName += `[Tamaño: Grande] `;
+        extraPrice += parseFloat(selectedSize.dataset.price);
+    }
+    
+    if (selectedMilk && selectedMilk.value !== "entera") {
+        variantName += `[Leche: ${selectedMilk.nextSibling.textContent.trim().split(' ')[0]}] `;
+        extraPrice += parseFloat(selectedMilk.dataset.price);
+    }
+
     const notes = modalNotes.value.trim();
 
-    cart.push({
-        product: currentSelectedProduct,
-        addons: selectedAddons,
-        notes: notes
-    });
+    // Check if similar item exists in cart to increase quantity
+    const existingIndex = cart.findIndex(item => 
+        item.product.id === currentSelectedProduct.id && 
+        JSON.stringify(item.addons) === JSON.stringify(selectedAddons) &&
+        item.variant === variantName
+    );
+
+    if (existingIndex > -1) {
+        cart[existingIndex].quantity += 1;
+    } else {
+        cart.push({
+            product: currentSelectedProduct,
+            addons: selectedAddons,
+            notes: notes,
+            variant: variantName,
+            extraPrice: extraPrice,
+            quantity: 1
+        });
+    }
 
     closeAddonModal();
     updateCartUI();
-    
-    // Auto-abrir el carrito para dar feedback visual
-    cartSidebar.classList.add('open');
+    showToast(`${currentSelectedProduct.name} agregado a la cuenta`);
 };
 
 function updateCartUI() {
@@ -234,32 +327,46 @@ function updateCartUI() {
     let total = 0;
 
     cart.forEach((item, index) => {
-        let itemTotal = parseFloat(item.product.price);
+        let baseItemPrice = parseFloat(item.product.price) + (item.extraPrice || 0);
+        let itemAddonsTotal = 0;
         let addonsHtml = '';
         
+        if (item.variant) {
+            addonsHtml += `<div class="cart-item-meta">${item.variant}</div>`;
+        }
+
         if (item.addons.length > 0) {
             const addonsText = item.addons.map(a => {
-                itemTotal += a.price;
+                itemAddonsTotal += a.price;
                 return a.name;
             }).join(', ');
-            addonsHtml = `<div class="cart-item-meta">+ ${addonsText}</div>`;
+            addonsHtml += `<div class="cart-item-meta">+ ${addonsText}</div>`;
         }
 
         if (item.notes) {
             addonsHtml += `<div class="cart-item-meta" style="font-style:italic">Nota: ${item.notes}</div>`;
         }
 
-        total += itemTotal;
+        const unitPrice = baseItemPrice + itemAddonsTotal;
+        const subtotal = unitPrice * item.quantity;
+        total += subtotal;
 
         const el = document.createElement('div');
         el.className = 'cart-item';
         el.innerHTML = `
             <div class="cart-item-header">
                 <h4>${item.product.name}</h4>
-                <span class="price">$${itemTotal.toFixed(2)}</span>
+                <span class="price">$${subtotal.toFixed(2)}</span>
             </div>
             ${addonsHtml}
-            <button class="btn-remove" onclick="removeFromCart(${index})">Eliminar</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                <div class="cart-item-qty">
+                    <button class="btn-qty" onclick="changeCartQty(${index}, -1)">-</button>
+                    <span class="qty-display">${item.quantity}</span>
+                    <button class="btn-qty" onclick="changeCartQty(${index}, 1)">+</button>
+                </div>
+                <button class="btn-remove" onclick="removeFromCart(${index})">Eliminar</button>
+            </div>
         `;
         cartItemsContainer.appendChild(el);
     });
@@ -268,19 +375,46 @@ function updateCartUI() {
     btnPay.disabled = false;
 }
 
+window.changeCartQty = function(index, delta) {
+    cart[index].quantity += delta;
+    if (cart[index].quantity <= 0) {
+        removeFromCart(index);
+    } else {
+        updateCartUI();
+    }
+};
+
 window.removeFromCart = function(index) {
     cart.splice(index, 1);
     updateCartUI();
+    showToast('Producto eliminado');
 };
 
 cartBtn.onclick = () => cartSidebar.classList.add('open');
 closeCartBtn.onclick = () => cartSidebar.classList.remove('open');
 
+// Toggle Address Field based on service
+checkoutService.addEventListener('change', (e) => {
+    if (e.target.value === 'delivery') {
+        checkoutAddressGroup.style.display = 'block';
+    } else {
+        checkoutAddressGroup.style.display = 'none';
+    }
+});
+
 btnPay.onclick = async () => {
     if (cart.length === 0) return;
     
+    // Validaciones E-commerce
+    if (!checkoutName.value.trim()) return showToast('Ingrese su Nombre y Apellido');
+    if (!checkoutPhone.value.trim()) return showToast('Ingrese su Teléfono');
+    if (!checkoutEmail.value.trim()) return showToast('Ingrese su Correo');
+    if (checkoutService.value === 'delivery' && !checkoutAddress.value.trim()) {
+        return showToast('Ingrese su Dirección de Envío');
+    }
+    
     btnPay.disabled = true;
-    btnPay.textContent = 'Procesando...';
+    btnPay.textContent = 'Procesando Pago...';
 
     const payload = {
         items: cart.map(item => ({
@@ -304,21 +438,57 @@ btnPay.onclick = async () => {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`¡Pedido exclusivo registrado con éxito!\nMétodo: ${checkoutService.options[checkoutService.selectedIndex].text}\nPago: ${checkoutPayment.options[checkoutPayment.selectedIndex].text}\nSu orden está siendo preparada.`);
+            // Generar número de orden ficticio
+            const orderNum = 'TGR-' + Math.floor(Math.random() * 90000 + 10000);
+            successOrderId.textContent = orderNum;
+            successOrderTotal.textContent = cartTotalEl.textContent;
+            
+            // Show Success Modal
+            successModal.classList.add('open');
+            cartSidebar.classList.remove('open');
+            
             cart = [];
             updateCartUI();
-            cartSidebar.classList.remove('open');
+            
+            // Limpiar form
+            checkoutName.value = '';
+            checkoutPhone.value = '';
+            checkoutEmail.value = '';
+            checkoutAddress.value = '';
         } else {
-            alert('Error en la orden: ' + (result.message || 'Fondos/Inventario insuficiente.'));
+            showToast('Error: ' + (result.message || 'Inventario insuficiente.'));
         }
     } catch (error) {
         console.error('Error Checkout:', error);
-        alert('Ocurrió un error al procesar el pago.');
+        showToast('Ocurrió un error al conectar con el servidor.');
     } finally {
         btnPay.textContent = 'Finalizar Pedido';
         if (cart.length > 0) btnPay.disabled = false;
     }
 };
+
+// Success Modal Logic
+const closeSuccessModal = () => successModal.classList.remove('open');
+btnCloseSuccess.onclick = closeSuccessModal;
+btnSuccessClose.onclick = closeSuccessModal;
+
+// Toast Function
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {

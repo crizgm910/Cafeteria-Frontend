@@ -217,7 +217,21 @@
             <div class="empty-cart-msg">Aún no ha seleccionado nada.</div>
         </div>
         <div class="cart-checkout-options">
+            <!-- Client Info Fields -->
             <div class="checkout-group">
+                <label>Nombre y Apellido:</label>
+                <input type="text" id="checkout-name" class="modal-input" placeholder="Ej. Arthur Shelby">
+            </div>
+            <div class="checkout-group">
+                <label>Teléfono:</label>
+                <input type="tel" id="checkout-phone" class="modal-input" placeholder="Ej. 555-1234-5678">
+            </div>
+            <div class="checkout-group">
+                <label>Correo Electrónico:</label>
+                <input type="email" id="checkout-email" class="modal-input" placeholder="correo@ejemplo.com">
+            </div>
+            
+            <div class="checkout-group" style="margin-top: 15px;">
                 <label>Servicio:</label>
                 <select id="checkout-service">
                     <option value="local">Consumo en Local</option>
@@ -225,6 +239,13 @@
                     <option value="delivery">Envío a Domicilio</option>
                 </select>
             </div>
+            
+            <!-- Delivery Address (Hidden by default) -->
+            <div class="checkout-group" id="checkout-address-group" style="display: none;">
+                <label>Dirección de Envío:</label>
+                <input type="text" id="checkout-address" class="modal-input" placeholder="Calle, número, ciudad">
+            </div>
+
             <div class="checkout-group">
                 <label>Pago:</label>
                 <select id="checkout-payment">
@@ -254,13 +275,33 @@
                 <div id="modal-tasting-notes" class="tasting-notes-bar">
                     <!-- Notas de cata (fake data o real si existe) -->
                 </div>
+                
+                <div id="modal-variants" class="modal-variants" style="display:none; margin-bottom: 20px;">
+                    <p class="modal-subtitle">Tamaño:</p>
+                    <div class="variant-group" id="size-options">
+                        <label class="variant-radio"><input type="radio" name="size" value="regular" data-price="0" checked> Regular</label>
+                        <label class="variant-radio"><input type="radio" name="size" value="grande" data-price="15"> Grande (+$15)</label>
+                    </div>
+                    
+                    <p class="modal-subtitle" style="margin-top:15px;">Tipo de Leche:</p>
+                    <div class="variant-group" id="milk-options">
+                        <label class="variant-radio"><input type="radio" name="milk" value="entera" data-price="0" checked> Entera</label>
+                        <label class="variant-radio"><input type="radio" name="milk" value="deslactosada" data-price="5"> Deslactosada (+$5)</label>
+                        <label class="variant-radio"><input type="radio" name="milk" value="almendra" data-price="12"> Almendra (+$12)</label>
+                        <label class="variant-radio"><input type="radio" name="milk" value="avena" data-price="15"> Avena (+$15)</label>
+                    </div>
+                </div>
+
                 <p class="modal-subtitle">Personalice su selección:</p>
                 <div id="modal-addons" class="modal-addon-list">
                     <!-- Checkboxes de complementos -->
                 </div>
                 <textarea id="modal-notes" class="modal-textarea" placeholder="Instrucciones especiales (ej. Sin hielo)"></textarea>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display:flex; flex-direction:column; gap:10px;">
+                <div class="modal-total-display" style="text-align:right; color:var(--color-gold); font-size:1.2rem; font-family:var(--font-heading);">
+                    Total: <span id="modal-dynamic-price">$0.00</span>
+                </div>
                 <button id="btn-confirm-addon" class="btn-primary w-100">Agregar a la Cuenta</button>
             </div>
         </div>
@@ -341,6 +382,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Order Success Modal -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-box text-center" style="border-color:var(--color-gold);">
+            <div class="modal-header" style="border:none; padding-bottom:0;">
+                <h3>&nbsp;</h3>
+                <button id="btn-close-success" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 4rem; margin-bottom: 15px;">🎩</div>
+                <h2 style="color:var(--color-gold); font-family:var(--font-heading); margin-bottom: 10px;">¡Pedido Confirmado!</h2>
+                <p style="color:var(--color-beige); margin-bottom: 20px;">Gracias por su preferencia. Su solicitud está en manos de nuestros expertos baristas.</p>
+                
+                <div style="background: rgba(26, 17, 10, 0.8); border: 1px dashed rgba(212, 175, 55, 0.3); padding: 20px; border-radius: 4px; margin-bottom: 25px; text-align: left;">
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Orden #:</strong> <span id="success-order-id" style="color:var(--color-gold);">TGR-0000</span></p>
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Total Pagado:</strong> <span id="success-order-total">$0.00</span></p>
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Tiempo Estimado:</strong> 15-20 minutos</p>
+                </div>
+                
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button class="btn-primary w-100" id="btn-success-close">Volver al Inicio</button>
+                    <button class="login-text-btn w-100" style="padding:15px; width:100%;" onclick="window.open('https://wa.me/1234567890', '_blank')">Contactar al Concierge (WhatsApp)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="js/app.js"></script>
 </body>

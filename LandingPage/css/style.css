@@ -358,6 +358,92 @@ a {
     opacity: 0.9;
 }
 
+/* Subscriptions Section */
+.subscriptions-section {
+    background-color: var(--color-charcoal);
+    border-top: 1px dashed rgba(212, 175, 55, 0.2);
+    border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
+}
+
+.subscription-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 40px;
+    margin-top: 50px;
+}
+
+.sub-card {
+    background-color: rgba(26, 17, 10, 0.8);
+    border: 1px solid rgba(255,253,208,0.1);
+    padding: 50px 40px;
+    border-radius: 4px;
+    text-align: center;
+    position: relative;
+    transition: var(--transition);
+}
+
+.sub-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+.sub-card h3 {
+    color: var(--color-cream);
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+.sub-price {
+    color: var(--color-gold);
+    font-size: 3rem;
+    font-family: var(--font-heading);
+    margin-bottom: 30px;
+}
+
+.sub-price span {
+    font-size: 1.2rem;
+    color: var(--color-beige);
+    font-family: var(--font-body);
+}
+
+.sub-benefits {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 40px;
+    color: var(--color-beige);
+}
+
+.sub-benefits li {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,253,208,0.05);
+}
+
+.sub-card-gold {
+    border-color: var(--color-gold);
+    background: linear-gradient(135deg, rgba(26, 17, 10, 0.9), rgba(40, 30, 20, 0.9));
+    transform: scale(1.05);
+}
+
+.sub-card-gold:hover {
+    transform: scale(1.05) translateY(-10px);
+    box-shadow: 0 20px 50px rgba(212, 175, 55, 0.15);
+}
+
+.sub-badge {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-gold);
+    color: var(--color-coffee-dark);
+    padding: 5px 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border-radius: 20px;
+}
+
 /* Gallery */
 .gallery-section {
     background-color: var(--color-charcoal);
@@ -900,4 +986,84 @@ a {
 .tasting-stars {
     color: var(--color-gold);
     font-size: 0.9rem;
+}
+
+/* Profile & Tasting Journal */
+.profile-box {
+    width: 95%;
+    max-width: 600px;
+}
+
+.journal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.journal-item {
+    background: rgba(26, 17, 10, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 20px;
+    border-radius: 4px;
+}
+
+.journal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.journal-header h4 {
+    color: var(--color-gold);
+    font-size: 1.2rem;
+}
+
+.journal-header span {
+    color: var(--color-beige);
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+.journal-rating {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.journal-rating span {
+    color: var(--color-cream);
+    font-size: 0.9rem;
+}
+
+.stars-interactive .star {
+    font-size: 1.2rem;
+    color: #555;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.stars-interactive .star.active, .stars-interactive .star:hover {
+    color: var(--color-gold);
+}
+
+.journal-notes {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed rgba(255,253,208,0.1);
+    color: var(--color-beige);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    padding-top: 15px;
+    resize: none;
+    font-style: italic;
+}
+
+.journal-notes:focus {
+    outline: none;
 }

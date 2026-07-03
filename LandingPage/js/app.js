@@ -33,6 +33,13 @@ const btnLoginModal = document.getElementById('btn-login-modal');
 const btnCloseLogin = document.getElementById('btn-close-login');
 const loginForm = document.getElementById('login-form');
 
+// Profile / Journal Elements
+const profileModal = document.getElementById('profile-modal');
+const btnCloseProfile = document.getElementById('btn-close-profile');
+const btnLogout = document.getElementById('btn-logout');
+
+let isLoggedIn = false;
+
 // Search Element
 const searchInput = document.getElementById('menu-search-input');
 
@@ -335,17 +342,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Login Modal Handlers
-    btnLoginModal.onclick = () => loginModal.classList.add('open');
+    btnLoginModal.onclick = () => {
+        if (isLoggedIn) {
+            profileModal.classList.add('open');
+        } else {
+            loginModal.classList.add('open');
+        }
+    };
+    
     btnCloseLogin.onclick = () => loginModal.classList.remove('open');
+    btnCloseProfile.onclick = () => profileModal.classList.remove('open');
     
     loginForm.onsubmit = (e) => {
         e.preventDefault();
         alert('¡Bienvenido al Gentlemen\'s Club! Su sesión ha sido iniciada.');
         loginModal.classList.remove('open');
-        btnLoginModal.innerHTML = 'ACCESO (✓)'; 
+        
+        isLoggedIn = true;
+        btnLoginModal.innerHTML = 'MI DIARIO (✓)'; 
         btnLoginModal.style.background = 'var(--color-gold)';
         btnLoginModal.style.color = 'var(--color-coffee-dark)';
     };
+    
+    btnLogout.onclick = () => {
+        isLoggedIn = false;
+        profileModal.classList.remove('open');
+        btnLoginModal.innerHTML = 'MEMBRESÍA'; 
+        btnLoginModal.style.background = 'transparent';
+        btnLoginModal.style.color = 'var(--color-gold)';
+        alert('Sesión cerrada exitosamente.');
+    };
+    
+    // Interactive Stars Logic
+    document.querySelectorAll('.stars-interactive').forEach(starContainer => {
+        const stars = starContainer.querySelectorAll('.star');
+        stars.forEach(star => {
+            star.onclick = function() {
+                const val = parseInt(this.getAttribute('data-val'));
+                stars.forEach(s => {
+                    if (parseInt(s.getAttribute('data-val')) <= val) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+                // Aquí se podría guardar el rating en el backend
+            };
+        });
+    });
     
     // Reservation Form Handler
     const resForm = document.getElementById('reservation-form');

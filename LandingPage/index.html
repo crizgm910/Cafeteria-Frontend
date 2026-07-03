@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Gentlemen's Roast | Café & Lounge</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">TGR</div>
+            <ul class="nav-links">
+                <li><a href="#hero">Inicio</a></li>
+                <li><a href="#featured">Especialidades</a></li>
+                <li><a href="#menu">Nuestro Menú</a></li>
+                <li><a href="#about">La Experiencia</a></li>
+                <li><a href="#reservation">Reserva</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <section id="hero" class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1>El Arte del Café, Reservado para Conocedores</h1>
+            <p>Un santuario de calma, madera oscura y notas de cata excepcionales.</p>
+            <a href="#menu" class="btn-primary">Descubrir Menú</a>
+        </div>
+    </section>
+
+    <!-- 2. Featured / Destacados -->
+    <section id="featured" class="featured-section section-padding">
+        <div class="container">
+            <h2 class="section-title">Nuestras Especialidades</h2>
+            <div class="featured-grid">
+                <div class="featured-card">
+                    <div class="card-icon">☕</div>
+                    <h3>Espresso Reserva</h3>
+                    <p>Granos seleccionados de estricta altura, notas a cacao oscuro y roble.</p>
+                </div>
+                <div class="featured-card">
+                    <div class="card-icon">🥃</div>
+                    <h3>Cold Brew Ahumado</h3>
+                    <p>Macerado por 24 horas y ahumado en frío con madera de nogal.</p>
+                </div>
+                <div class="featured-card">
+                    <div class="card-icon">🍰</div>
+                    <h3>Trufa de Cacao</h3>
+                    <p>El acompañante perfecto, bañado en oro comestible y ron añejo.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Dynamic Menu Section -->
+    <section id="menu" class="menu-section section-padding">
+        <div class="container">
+            <h2 class="section-title">La Carta</h2>
+            <p class="section-subtitle">Nuestra selección curada para paladares exigentes.</p>
+            
+            <div class="menu-filters" id="menu-filters">
+                <!-- Botones de categoría cargados por JS -->
+                <span>Cargando catálogo...</span>
+            </div>
+
+            <div class="menu-grid" id="menu-grid">
+                <!-- Productos cargados por JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. About Us -->
+    <section id="about" class="about-section">
+        <div class="about-grid">
+            <div class="about-image">
+                <!-- Imagen lounge.png por CSS -->
+            </div>
+            <div class="about-content">
+                <h2>Un Club Privado,<br>Una Atmósfera Única</h2>
+                <p>Inspirados en la estética de los clubes de caballeros del siglo XIX, hemos creado un espacio donde el tiempo se detiene. Sillones de cuero capitoné, iluminación cálida y una barra de madera de caoba te esperan.</p>
+                <p>Aquí no vendemos prisa. Vendemos conversaciones pausadas, negocios cerrados y el mejor café de especialidad de la ciudad.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Gallery -->
+    <section id="gallery" class="gallery-section section-padding">
+        <div class="container">
+            <h2 class="section-title">Detalles que Importan</h2>
+            <div class="gallery-grid">
+                <div class="gallery-img img-1"></div>
+                <div class="gallery-img img-2"></div>
+                <div class="gallery-img img-3"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Reservation -->
+    <section id="reservation" class="reservation-section section-padding">
+        <div class="container reservation-container">
+            <div class="reservation-box">
+                <h2>Asegure su Mesa</h2>
+                <p>Nuestra capacidad es limitada para garantizar la exclusividad.</p>
+                <form class="reservation-form">
+                    <input type="text" placeholder="Su Nombre y Apellido" required>
+                    <input type="email" placeholder="Correo Electrónico" required>
+                    <div class="form-row">
+                        <input type="date" required>
+                        <input type="time" required>
+                    </div>
+                    <select>
+                        <option>Para 1 persona</option>
+                        <option>Para 2 personas</option>
+                        <option>Para 3 personas</option>
+                        <option>Para 4 personas</option>
+                    </select>
+                    <button type="submit" class="btn-primary w-100">Solicitar Reserva</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Footer -->
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <h2>TGR</h2>
+                <p>The Gentlemen's Roast</p>
+            </div>
+            <div class="footer-info">
+                <h3>Ubicación</h3>
+                <p>Av. Principal de la Elegancia 123</p>
+                <p>Distrito Financiero</p>
+            </div>
+            <div class="footer-info">
+                <h3>Horarios</h3>
+                <p>Lunes - Sábado: 7am - 10pm</p>
+                <p>Domingo: Cerrado</p>
+            </div>
+            <div class="footer-social">
+                <h3>Contacto</h3>
+                <p>contacto@thegentlemensroast.com</p>
+                <p>+1 234 567 8900</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 The Gentlemen's Roast. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

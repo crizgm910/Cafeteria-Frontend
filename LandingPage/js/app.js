@@ -15,6 +15,8 @@ const closeCartBtn = document.getElementById('close-cart-btn');
 const cartItemsContainer = document.getElementById('cart-items');
 const cartTotalEl = document.getElementById('cart-total');
 const btnPay = document.getElementById('btn-pay');
+const checkoutService = document.getElementById('checkout-service');
+const checkoutPayment = document.getElementById('checkout-payment');
 
 // Modal Elements
 const addonModal = document.getElementById('addon-modal');
@@ -23,6 +25,18 @@ const btnConfirmAddon = document.getElementById('btn-confirm-addon');
 const modalProductName = document.getElementById('modal-product-name');
 const modalAddons = document.getElementById('modal-addons');
 const modalNotes = document.getElementById('modal-notes');
+const modalTastingNotes = document.getElementById('modal-tasting-notes');
+
+// Login Elements
+const loginModal = document.getElementById('login-modal');
+const btnLoginModal = document.getElementById('btn-login-modal');
+const btnCloseLogin = document.getElementById('btn-close-login');
+const loginForm = document.getElementById('login-form');
+
+// Search Element
+const searchInput = document.getElementById('menu-search-input');
+
+let currentActiveCategory = null;
 
 async function initMenu() {
     try {
@@ -54,14 +68,40 @@ function renderFilters() {
         btn.onclick = () => {
             document.querySelectorAll('.menu-filters button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            currentActiveCategory = category;
+            searchInput.value = ''; // limpiar búsqueda al cambiar categoría
             renderMenuCategory(category);
         };
         
         menuFilters.appendChild(btn);
     });
+    
+    // Configurar búsqueda
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        if (term === '') {
+            renderMenuCategory(currentActiveCategory || menuData[0]);
+            return;
+        }
+        
+        // Buscar en todo el catálogo
+        let allFilteredProducts = [];
+        menuData.forEach(cat => {
+            const matches = cat.products.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                (p.description && p.description.toLowerCase().includes(term))
+            );
+            allFilteredProducts = [...allFilteredProducts, ...matches];
+        });
+        
+        // Render fake category para resultados
+        renderMenuCategory({ name: 'Resultados', products: allFilteredProducts }, true);
+    });
 }
 
-function renderMenuCategory(category) {
+function renderMenuCategory(category, isSearch = false) {
+    if (!isSearch) currentActiveCategory = category;
+    
     menuGrid.style.opacity = '0';
     
     setTimeout(() => {
@@ -98,6 +138,26 @@ function openAddonModal(product) {
     modalProductName.textContent = product.name;
     modalNotes.value = '';
     modalAddons.innerHTML = '';
+    
+    // Generar notas de cata ficticias pero elegantes basadas en el id (para consistencia)
+    const acidity = (product.id % 5) + 1;
+    const body = ((product.id * 2) % 5) + 1;
+    const aroma = ((product.id * 3) % 5) + 1;
+    
+    modalTastingNotes.innerHTML = `
+        <div class="tasting-note">
+            <span class="tasting-label">Acidez</span>
+            <span class="tasting-stars">${'★'.repeat(acidity)}${'☆'.repeat(5-acidity)}</span>
+        </div>
+        <div class="tasting-note">
+            <span class="tasting-label">Cuerpo</span>
+            <span class="tasting-stars">${'★'.repeat(body)}${'☆'.repeat(5-body)}</span>
+        </div>
+        <div class="tasting-note">
+            <span class="tasting-label">Aroma</span>
+            <span class="tasting-stars">${'★'.repeat(aroma)}${'☆'.repeat(5-aroma)}</span>
+        </div>
+    `;
     
     if (product.addons && product.addons.length > 0) {
         product.addons.forEach(addon => {
@@ -237,7 +297,7 @@ btnPay.onclick = async () => {
         const result = await response.json();
 
         if (response.ok) {
-            alert('¡Pedido exclusivo registrado con éxito! Su orden está siendo preparada.');
+            alert(`¡Pedido exclusivo registrado con éxito!\nMétodo: ${checkoutService.options[checkoutService.selectedIndex].text}\nPago: ${checkoutPayment.options[checkoutPayment.selectedIndex].text}\nSu orden está siendo preparada.`);
             cart = [];
             updateCartUI();
             cartSidebar.classList.remove('open');
@@ -273,4 +333,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+    
+    // Login Modal Handlers
+    btnLoginModal.onclick = () => loginModal.classList.add('open');
+    btnCloseLogin.onclick = () => loginModal.classList.remove('open');
+    
+    loginForm.onsubmit = (e) => {
+        e.preventDefault();
+        alert('¡Bienvenido al Gentlemen\'s Club! Su sesión ha sido iniciada.');
+        loginModal.classList.remove('open');
+        btnLoginModal.innerHTML = '👑'; // Cambiar ícono para simular sesión iniciada
+    };
+    
+    // Reservation Form Handler
+    const resForm = document.getElementById('reservation-form');
+    if (resForm) {
+        resForm.onsubmit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById('res-name').value;
+            const date = document.getElementById('res-date').value;
+            const time = document.getElementById('res-time').value;
+            alert(`Estimado/a ${name},\nSu solicitud de reserva para el ${date} a las ${time} ha sido recibida.\nUn concierge se pondrá en contacto pronto para confirmar.`);
+            resForm.reset();
+        };
+    }
 });

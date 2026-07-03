@@ -23,6 +23,9 @@
                 <li><a href="#about">La Experiencia</a></li>
                 <li><a href="#reservation">Reserva</a></li>
             </ul>
+            <div class="nav-actions">
+                <button id="btn-login-modal" class="icon-btn" title="Iniciar Sesión">👤</button>
+            </div>
         </div>
     </nav>
 
@@ -66,6 +69,13 @@
             <h2 class="section-title">La Carta</h2>
             <p class="section-subtitle">Nuestra selección curada para paladares exigentes.</p>
             
+            <div class="menu-controls">
+                <div class="menu-search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="menu-search-input" placeholder="Buscar notas de cata, bebidas...">
+                </div>
+            </div>
+
             <div class="menu-filters" id="menu-filters">
                 <!-- Botones de categoría cargados por JS -->
                 <span>Cargando catálogo...</span>
@@ -109,14 +119,14 @@
             <div class="reservation-box">
                 <h2>Asegure su Mesa</h2>
                 <p>Nuestra capacidad es limitada para garantizar la exclusividad.</p>
-                <form class="reservation-form">
-                    <input type="text" placeholder="Su Nombre y Apellido" required>
-                    <input type="email" placeholder="Correo Electrónico" required>
+                <form class="reservation-form" id="reservation-form">
+                    <input type="text" id="res-name" placeholder="Su Nombre y Apellido" required>
+                    <input type="email" id="res-email" placeholder="Correo Electrónico" required>
                     <div class="form-row">
-                        <input type="date" required>
-                        <input type="time" required>
+                        <input type="date" id="res-date" required>
+                        <input type="time" id="res-time" required>
                     </div>
-                    <select>
+                    <select id="res-guests">
                         <option>Para 1 persona</option>
                         <option>Para 2 personas</option>
                         <option>Para 3 personas</option>
@@ -171,6 +181,24 @@
         <div class="cart-sidebar-items" id="cart-items">
             <div class="empty-cart-msg">Aún no ha seleccionado nada.</div>
         </div>
+        <div class="cart-checkout-options">
+            <div class="checkout-group">
+                <label>Servicio:</label>
+                <select id="checkout-service">
+                    <option value="local">Consumo en Local</option>
+                    <option value="pickup">Para Llevar (Pick-up)</option>
+                    <option value="delivery">Envío a Domicilio</option>
+                </select>
+            </div>
+            <div class="checkout-group">
+                <label>Pago:</label>
+                <select id="checkout-payment">
+                    <option value="card">Tarjeta Crédito/Débito</option>
+                    <option value="cash">Efectivo al recibir</option>
+                    <option value="apple">Billetera Digital (Apple/Google)</option>
+                </select>
+            </div>
+        </div>
         <div class="cart-sidebar-footer">
             <div class="cart-total-row">
                 <span>Total</span>
@@ -188,6 +216,9 @@
                 <button id="btn-cancel-addon" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
+                <div id="modal-tasting-notes" class="tasting-notes-bar">
+                    <!-- Notas de cata (fake data o real si existe) -->
+                </div>
                 <p class="modal-subtitle">Personalice su selección:</p>
                 <div id="modal-addons" class="modal-addon-list">
                     <!-- Checkboxes de complementos -->
@@ -196,6 +227,27 @@
             </div>
             <div class="modal-footer">
                 <button id="btn-confirm-addon" class="btn-primary w-100">Agregar a la Cuenta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login/Register Modal -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-box login-box">
+            <div class="modal-header">
+                <h3>The Gentlemen's Club</h3>
+                <button id="btn-close-login" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="modal-subtitle" style="text-align:center;">Membresía Exclusiva</p>
+                <form id="login-form">
+                    <input type="email" id="login-email" class="modal-input" placeholder="Correo Electrónico" required>
+                    <input type="password" id="login-pass" class="modal-input" placeholder="Contraseña secreta" required>
+                    <button type="submit" class="btn-primary w-100" style="margin-top:20px;">Ingresar al Club</button>
+                </form>
+                <p style="margin-top:20px; color:var(--color-beige); font-size:0.9rem;">
+                    ¿Aún no es miembro? <a href="#" style="color:var(--color-gold); text-decoration:underline;">Solicitar acceso</a>
+                </p>
             </div>
         </div>
     </div>

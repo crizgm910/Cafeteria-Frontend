@@ -75,12 +75,17 @@
                     <span class="search-icon">🔍</span>
                     <input type="text" id="menu-search-input" placeholder="Buscar notas de cata, bebidas...">
                 </div>
-                <div class="menu-sort-wrapper">
-                    <select id="menu-sort-select">
-                        <option value="default">Recomendados</option>
-                        <option value="asc">Menor Precio</option>
-                        <option value="desc">Mayor Precio</option>
-                    </select>
+                <div class="menu-sort-wrapper custom-select-wrapper" id="wrapper-sort" style="min-width: 180px;">
+                    <div class="custom-dropdown-toggle reservation-input" id="toggle-sort" style="padding: 10px 15px;">
+                        <span id="display-sort">Recomendados</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="custom-dropdown-options" id="dropdown-sort">
+                        <div class="dropdown-option selected" data-value="default">Recomendados</div>
+                        <div class="dropdown-option" data-value="asc">Menor Precio</div>
+                        <div class="dropdown-option" data-value="desc">Mayor Precio</div>
+                    </div>
+                    <input type="hidden" id="menu-sort-select" value="default">
                 </div>
             </div>
 
@@ -326,13 +331,18 @@
                         <input type="email" id="checkout-email" class="modal-input" placeholder="correo@ejemplo.com">
                     </div>
                     
-                    <div class="checkout-group" style="margin-top: 15px;">
+                    <div class="checkout-group custom-select-wrapper" id="wrapper-checkout-service" style="margin-top: 15px;">
                         <label>Servicio:</label>
-                        <select id="checkout-service">
-                            <option value="local">Consumo en Local</option>
-                            <option value="pickup">Para Llevar (Pick-up)</option>
-                            <option value="delivery">Envío a Domicilio</option>
-                        </select>
+                        <div class="custom-dropdown-toggle modal-input" id="toggle-checkout-service" style="padding: 15px; margin-top:5px; margin-bottom: 0;">
+                            <span id="display-checkout-service">Consumo en Local</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="custom-dropdown-options" id="dropdown-checkout-service">
+                            <div class="dropdown-option selected" data-value="local">Consumo en Local</div>
+                            <div class="dropdown-option" data-value="pickup">Para Llevar (Pick-up)</div>
+                            <div class="dropdown-option" data-value="delivery">Envío a Domicilio</div>
+                        </div>
+                        <input type="hidden" id="checkout-service" value="local">
                     </div>
                     
                     <div class="checkout-group" id="checkout-address-group" style="display: none;">
@@ -340,13 +350,18 @@
                         <input type="text" id="checkout-address" class="modal-input" placeholder="Calle, número, ciudad">
                     </div>
 
-                    <div class="checkout-group">
+                    <div class="checkout-group custom-select-wrapper" id="wrapper-checkout-payment">
                         <label>Pago:</label>
-                        <select id="checkout-payment">
-                            <option value="card">Tarjeta Crédito/Débito</option>
-                            <option value="cash">Efectivo al recibir</option>
-                            <option value="apple">Billetera Digital (Apple/Google)</option>
-                        </select>
+                        <div class="custom-dropdown-toggle modal-input" id="toggle-checkout-payment" style="padding: 15px; margin-top:5px; margin-bottom: 0;">
+                            <span id="display-checkout-payment">Tarjeta Crédito/Débito</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="custom-dropdown-options" id="dropdown-checkout-payment">
+                            <div class="dropdown-option selected" data-value="card">Tarjeta Crédito/Débito</div>
+                            <div class="dropdown-option" data-value="cash">Efectivo al recibir</div>
+                            <div class="dropdown-option" data-value="apple">Billetera Digital (Apple/Google)</div>
+                        </div>
+                        <input type="hidden" id="checkout-payment" value="card">
                     </div>
                 </div>
             </div>

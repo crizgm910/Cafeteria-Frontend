@@ -516,14 +516,7 @@ cartBtn.onclick = () => {
 };
 closeCartBtn.onclick = () => cartSidebar.classList.remove('open');
 
-// Toggle Address Field based on service
-checkoutService.addEventListener('change', (e) => {
-    if (e.target.value === 'delivery') {
-        checkoutAddressGroup.style.display = 'block';
-    } else {
-        checkoutAddressGroup.style.display = 'none';
-    }
-});
+
 
 btnPay.onclick = async () => {
     if (cart.length === 0) return;
@@ -803,60 +796,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputGuests = document.getElementById('res-guests');
     const wrapperGuests = document.getElementById('wrapper-guests');
     
-    // 3. Dropdown Toggles
-    const wrappers = [
-        document.getElementById('wrapper-date'),
-        wrapperTime,
-        wrapperGuests
-    ];
+    // 3. Dropdown Toggles Genérico
+    const allWrappers = document.querySelectorAll('.custom-select-wrapper');
 
-    wrappers.forEach(wrapper => {
-        if(!wrapper) return;
+    allWrappers.forEach(wrapper => {
         const toggle = wrapper.querySelector('.custom-dropdown-toggle');
+        if (!toggle) return;
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
             // Close others
-            wrappers.forEach(w => { if(w !== wrapper && w) w.classList.remove('open') });
+            allWrappers.forEach(w => { if(w !== wrapper) w.classList.remove('open') });
             wrapper.classList.toggle('open');
             toggle.classList.remove('active');
         });
     });
 
-    // 4. Click outside to close
+    // 4. Click outside to close genérico
     document.addEventListener('click', (e) => {
-        wrappers.forEach(wrapper => {
-            if (wrapper && !wrapper.contains(e.target)) {
+        allWrappers.forEach(wrapper => {
+            if (!wrapper.contains(e.target)) {
                 wrapper.classList.remove('open');
             }
         });
     });
 
-    // 5. Select Logic for Time and Guests
+    // 5. Select Logic Genérico
     document.querySelectorAll('.custom-dropdown-options').forEach(optionsContainer => {
         optionsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('dropdown-option')) {
                 const value = e.target.getAttribute('data-value');
                 const text = e.target.textContent;
                 const wrapper = e.target.closest('.custom-select-wrapper');
+                const toggle = wrapper.querySelector('.custom-dropdown-toggle span:first-child');
+                const hiddenInput = wrapper.querySelector('input[type="hidden"]');
                 
                 // Update display and hidden input
-                if (wrapper.id === 'wrapper-time') {
-                    displayTime.textContent = text;
-                    inputTime.value = value;
-                    document.getElementById('error-res-time').style.display = 'none';
-                    document.getElementById('toggle-time').style.borderColor = 'rgba(255,253,208,0.2)';
-                } else if (wrapper.id === 'wrapper-guests') {
-                    displayGuests.textContent = text;
-                    inputGuests.value = value;
-                    document.getElementById('error-res-guests').style.display = 'none';
-                    document.getElementById('toggle-guests').style.borderColor = 'rgba(255,253,208,0.2)';
-                }
+                if (toggle) toggle.textContent = text;
+                if (hiddenInput) hiddenInput.value = value;
+                
+                // Remove error styling if exists
+                const toggleContainer = wrapper.querySelector('.custom-dropdown-toggle');
+                if (toggleContainer) toggleContainer.style.borderColor = 'rgba(255,253,208,0.2)';
+                
+                const errorSpan = wrapper.querySelector('.form-error');
+                if (errorSpan) errorSpan.style.display = 'none';
                 
                 // Remove selected class from siblings
                 Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
                 e.target.classList.add('selected');
                 
                 wrapper.classList.remove('open');
+
+                // Lógica Especial: Checkout Service -> Delivery Address
+                if (hiddenInput && hiddenInput.id === 'checkout-service') {
+                    const checkoutAddressGroup = document.getElementById('checkout-address-group');
+                    if (checkoutAddressGroup) {
+                        checkoutAddressGroup.style.display = value === 'delivery' ? 'block' : 'none';
+                    }
+                }
             }
         });
     });

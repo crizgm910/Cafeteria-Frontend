@@ -617,6 +617,12 @@ btnPay.onclick = async () => {
             cart = [];
             updateCartUI();
             
+            if (payload.payment_method === 'cash' || payload.payment_method === 'efectivo') {
+                btnPrintTicket.style.display = 'none';
+            } else {
+                btnPrintTicket.style.display = 'block';
+            }
+            
             // Show Success Modal
             successModal.classList.add('open');
             cartSidebar.classList.remove('open');

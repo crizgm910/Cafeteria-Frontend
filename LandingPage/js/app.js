@@ -647,9 +647,6 @@ btnPay.onclick = async () => {
     } finally {
         btnPay.textContent = 'Finalizar Pedido';
         if (cart.length > 0) btnPay.disabled = false;
-    }
-};
-
 // Success Modal Logic
 const closeSuccessModal = () => successModal.classList.remove('open');
 btnCloseSuccess.onclick = closeSuccessModal;
@@ -658,40 +655,79 @@ btnSuccessClose.onclick = closeSuccessModal;
 btnPrintTicket.onclick = () => {
     const orderNum = successOrderId.textContent;
     const win = window.open('', '_blank', 'width=400,height=600');
+    
+    const d = new Date();
+    const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const checkoutPayment = document.getElementById('checkout-payment');
+    const paymentMethodStr = (checkoutPayment && checkoutPayment.value !== 'cash' && checkoutPayment.value !== 'efectivo') ? 'Tarjeta' : 'Efectivo';
+    const customerName = document.getElementById('checkout-name').value;
+    const serviceVal = document.getElementById('checkout-service').value;
+    const orderType = serviceVal === 'takeaway' ? 'Para llevar' : 'Comer aquí';
+    
     let itemsHtml = '';
+    let totalCalc = 0;
     lastOrderCart.forEach(item => {
-        let basePrice = item.product.price;
+        let basePrice = parsePrice(item.product.price);
         let addonsTotal = 0;
-        if(item.addons) {
-            item.addons.forEach(a => addonsTotal += parseFloat(a.price));
+        let addonsListHtml = '';
+        if (item.addons && item.addons.length > 0) {
+            item.addons.forEach(a => {
+                addonsTotal += parsePrice(a.price);
+                addonsListHtml += `<div style="display:flex; justify-content:space-between; font-size:1rem; padding-left:15px; color:#555;"><span>+ ${a.name}</span></div>`;
+            });
         }
-        let unitPrice = parseFloat(basePrice) + addonsTotal;
-        itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <span>${item.quantity}x ${item.product.name}</span>
-            <span>$${(item.quantity * unitPrice).toFixed(2)}</span>
-        </div>`;
+        let unitPrice = basePrice + parsePrice(item.extraPrice) + addonsTotal;
+        let itemSubtotal = unitPrice * item.quantity;
+        totalCalc += itemSubtotal;
+        
+        itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:0;"><strong style="font-size:1.2rem;">${item.quantity} x ${item.product.name}</strong><strong style="font-size:1.2rem;">$${itemSubtotal.toFixed(2)}</strong></div>`;
+        itemsHtml += addonsListHtml;
+        if (item.notes) {
+            itemsHtml += `<div style="font-size:1rem; padding-left:15px; font-style:italic;">Nota: ${item.notes}</div>`;
+        }
+        itemsHtml += `<div style="margin-bottom:10px;"></div>`;
     });
-
+    
+    const subtotal = totalCalc / 1.16;
+    const iva = totalCalc - subtotal;
+    
     win.document.write(`
-        <html><head><title>Ticket de Compra</title>
-        <style>
-            body { font-family: 'Courier New', Courier, monospace; color: black; padding: 20px; font-size: 14px;}
-            .text-center { text-align: center; }
-            .divider { border-top: 1px dashed black; margin: 10px 0; }
-        </style>
-        </head><body>
-            <h2 class="text-center">TGR RECEIPT</h2>
-            <p class="text-center">Pedido #${orderNum}</p>
-            <div class="divider"></div>
-            ${itemsHtml}
-            <div class="divider"></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:10px;">
-                <span>TOTAL:</span>
-                <span>${lastOrderTotal}</span>
+        <html>
+        <head>
+            <title>Ticket ${orderNum}</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 20px; color: #000; }
+                h1 { text-align: center; font-size: 1.8rem; margin-bottom: 5px; text-transform: uppercase; }
+                .text-center { text-align: center; }
+                .details { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.1rem; }
+                .totals { border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <h1>TGR RECEIPT</h1>
+            <p class="text-center" style="font-size:1.3rem; font-weight:bold; margin-top:0;">PEDIDO #${orderNum}</p>
+            
+            <div class="details">
+                <p style="margin:2px 0;"><strong>Fecha:</strong> ${dateStr}</p>
+                ${customerName ? `<p style="margin:2px 0;"><strong>Cliente:</strong> ${customerName}</p>` : ''}
+                <p style="margin:2px 0;"><strong>Tipo:</strong> ${orderType}</p>
+                <p style="margin:2px 0;"><strong>Pago:</strong> ${paymentMethodStr}</p>
             </div>
-            <p class="text-center" style="margin-top:30px;">¡Gracias por su preferencia!</p>
-            <script>setTimeout(() => { window.print(); window.close(); }, 500);</script>
-        </body></html>
+            
+            ${itemsHtml}
+            
+            <div class="totals">
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><span>IVA (16%)</span><span>$${iva.toFixed(2)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.4rem; margin-top:5px;"><span>TOTAL</span><span>$${totalCalc.toFixed(2)}</span></div>
+            </div>
+            
+            <p class="text-center" style="margin-top:20px; font-size:1.1rem;">¡Gracias por su preferencia!</p>
+            <script>
+                window.onload = function() { window.print(); }
+            </script>
+        </body>
+        </html>
     `);
     win.document.close();
 };

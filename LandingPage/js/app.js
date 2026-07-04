@@ -242,11 +242,20 @@ function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
             const icons = ['☕', '🍵', '🍰', '🥃', '🥐'];
             const fallbackIcon = icons[product.id % icons.length];
 
+            // Background image si existe
+            let imgHtml = '';
+            let style = 'cursor:pointer;';
+            if (product.image_url) {
+                style += ` background-image: url('${product.image_url}'); background-size: cover; background-position: center;`;
+            } else {
+                imgHtml = `<span class="menu-card-img-icon">${fallbackIcon}</span>`;
+            }
+
             item.innerHTML = `
-                <div class="menu-card-img" onclick="openAddonModal(${product.id})" style="cursor:pointer;">
+                <div class="menu-card-img" onclick="openAddonModal(${product.id})" style="${style}">
                     ${badgeHtml}
                     <button class="btn-favorite-card" onclick="toggleFavorite(this, event)">♡</button>
-                    <span class="menu-card-img-icon">${fallbackIcon}</span>
+                    ${imgHtml}
                 </div>
                 <div class="menu-card-body">
                     <h4>${safeName}</h4>

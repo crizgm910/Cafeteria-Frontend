@@ -5,6 +5,8 @@ const menuGrid = document.getElementById('menu-grid');
 
 let menuData = [];
 let cart = [];
+let lastOrderCart = [];
+let lastOrderTotal = "$0.00";
 let currentSelectedProduct = null;
 
 // Cart UI Elements
@@ -40,6 +42,7 @@ const checkoutAddress = document.getElementById('checkout-address');
 const successModal = document.getElementById('success-modal');
 const btnCloseSuccess = document.getElementById('btn-close-success');
 const btnSuccessClose = document.getElementById('btn-success-close');
+const btnPrintTicket = document.getElementById('btn-print-ticket');
 const successOrderId = document.getElementById('success-order-id');
 const successOrderTotal = document.getElementById('success-order-total');
 
@@ -608,6 +611,12 @@ btnPay.onclick = async () => {
                 items: cart.map(item => `${item.quantity}x ${item.product.name}`).join(', ')
             });
             
+            lastOrderCart = [...cart];
+            lastOrderTotal = cartTotalEl.textContent;
+            
+            cart = [];
+            updateCartUI();
+            
             // Show Success Modal
             successModal.classList.add('open');
             cartSidebar.classList.remove('open');
@@ -639,6 +648,47 @@ btnPay.onclick = async () => {
 const closeSuccessModal = () => successModal.classList.remove('open');
 btnCloseSuccess.onclick = closeSuccessModal;
 btnSuccessClose.onclick = closeSuccessModal;
+
+btnPrintTicket.onclick = () => {
+    const orderNum = successOrderId.textContent;
+    const win = window.open('', '_blank', 'width=400,height=600');
+    let itemsHtml = '';
+    lastOrderCart.forEach(item => {
+        let basePrice = item.product.price;
+        let addonsTotal = 0;
+        if(item.addons) {
+            item.addons.forEach(a => addonsTotal += parseFloat(a.price));
+        }
+        let unitPrice = parseFloat(basePrice) + addonsTotal;
+        itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span>${item.quantity}x ${item.product.name}</span>
+            <span>$${(item.quantity * unitPrice).toFixed(2)}</span>
+        </div>`;
+    });
+
+    win.document.write(`
+        <html><head><title>Ticket de Compra</title>
+        <style>
+            body { font-family: 'Courier New', Courier, monospace; color: black; padding: 20px; font-size: 14px;}
+            .text-center { text-align: center; }
+            .divider { border-top: 1px dashed black; margin: 10px 0; }
+        </style>
+        </head><body>
+            <h2 class="text-center">TGR RECEIPT</h2>
+            <p class="text-center">Pedido #${orderNum}</p>
+            <div class="divider"></div>
+            ${itemsHtml}
+            <div class="divider"></div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:10px;">
+                <span>TOTAL:</span>
+                <span>${lastOrderTotal}</span>
+            </div>
+            <p class="text-center" style="margin-top:30px;">¡Gracias por su preferencia!</p>
+            <script>setTimeout(() => { window.print(); window.close(); }, 500);</script>
+        </body></html>
+    `);
+    win.document.close();
+};
 
 // Toast Function
 function showToast(message) {

@@ -27,6 +27,25 @@ body {
     overflow-x: hidden;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(17, 17, 17, 0.9);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 175, 55, 0.6);
+}
+
 h1, h2, h3, h4 {
     font-family: var(--font-heading);
     font-weight: 600;
@@ -288,10 +307,28 @@ a {
 /* Menu Filters */
 .menu-filters {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 20px;
     margin-bottom: 40px;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    position: sticky;
+    top: 80px;
+    z-index: 90;
+    background: var(--color-charcoal);
+    /* For smooth horizontal scroll */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+.menu-filters::-webkit-scrollbar {
+    height: 4px;
+}
+
+@media (min-width: 768px) {
+    .menu-filters {
+        justify-content: center;
+    }
 }
 
 .menu-filters button {
@@ -313,57 +350,141 @@ a {
 
 .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(1, 1fr);
     gap: 30px;
 }
 
-.menu-item {
+@media (min-width: 768px) {
+    .menu-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+    .menu-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.menu-card {
+    background-color: rgba(26, 17, 10, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 15px;
-    padding-top: 15px;
-    border-bottom: 1px dashed rgba(255,253,208,0.2);
+    flex-direction: column;
+    transition: var(--transition);
+}
+
+.menu-card:hover {
+    border-color: rgba(212, 175, 55, 0.5);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.menu-card-img {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(17,17,17,0.8);
     position: relative;
-}
-
-.menu-item-info {
-    flex: 1;
-    padding-right: 15px;
-}
-
-.menu-item-info h4 {
-    font-size: 1.3rem;
-    color: var(--color-cream);
-    margin-bottom: 5px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
 }
 
-.product-badge {
-    font-size: 0.65rem;
-    padding: 2px 8px;
-    border-radius: 10px;
+/* Fallback Icon for image */
+.menu-card-img-icon {
+    font-size: 4rem;
+    color: var(--color-gold);
+    opacity: 0.3;
+}
+
+.menu-card-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
     text-transform: uppercase;
     font-weight: bold;
     letter-spacing: 1px;
 }
 
 .badge-premium { background: var(--color-gold); color: var(--color-coffee-dark); }
-.badge-nuevo { background: rgba(255, 255, 255, 0.1); color: var(--color-beige); border: 1px solid var(--color-beige); }
+.badge-nuevo { background: rgba(17, 17, 17, 0.8); color: var(--color-beige); border: 1px solid var(--color-beige); }
 
-.menu-item-info p {
+.btn-favorite-card {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(17, 17, 17, 0.8);
+    border: 1px solid rgba(255,253,208,0.2);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1.2rem;
+}
+
+.btn-favorite-card:hover, .btn-favorite-card.active {
+    color: #ff4d4d;
+    border-color: #ff4d4d;
+}
+
+.menu-card-body {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.menu-card-body h4 {
+    font-size: 1.3rem;
+    color: var(--color-cream);
+    margin-bottom: 10px;
+}
+
+.menu-card-body p {
     font-size: 0.9rem;
     color: var(--color-beige);
     opacity: 0.7;
+    margin-bottom: 20px;
+    flex: 1;
 }
 
-.menu-item-price {
+.menu-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.menu-card-price {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: var(--color-gold);
-    margin-right: 15px;
+}
+
+.btn-add-card {
+    background: transparent;
+    border: 1px solid var(--color-gold);
+    color: var(--color-gold);
+    padding: 8px 15px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.btn-add-card:hover {
+    background: var(--color-gold);
+    color: var(--color-coffee-dark);
 }
 
 /* About Section */
@@ -864,12 +985,15 @@ a {
 .modal-box {
     background: var(--color-charcoal);
     border: 1px solid var(--color-gold);
-    width: 90%;
+    width: 95%;
     max-width: 500px;
+    max-height: 90vh; /* Scalable Limit */
     border-radius: 4px;
     transform: translateY(50px);
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column; /* To allow inner scrolling */
 }
 
 .modal-overlay.open .modal-box {
@@ -882,6 +1006,7 @@ a {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0; /* Keep fixed at top */
 }
 
 .modal-header h3 {
@@ -891,6 +1016,8 @@ a {
 
 .modal-body {
     padding: 30px;
+    overflow-y: auto; /* Internal scrolling */
+    flex: 1; /* Take remaining space */
 }
 
 .modal-subtitle {
@@ -948,6 +1075,7 @@ a {
     padding: 25px 30px;
     background: var(--color-coffee-dark);
     border-top: 1px dashed rgba(212, 175, 55, 0.3);
+    flex-shrink: 0; /* Keep fixed at bottom */
 }
 
 /* Button Disabled state */

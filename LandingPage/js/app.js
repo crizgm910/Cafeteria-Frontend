@@ -69,6 +69,14 @@ const searchInput = document.getElementById('menu-search-input');
 
 let currentActiveCategory = null;
 
+// UTILITY FUNCTIONS
+function parsePrice(val) {
+    if (val === null || val === undefined || isNaN(parseFloat(val))) {
+        return 0;
+    }
+    return parseFloat(val);
+}
+
 async function initMenu() {
     try {
         const response = await fetch(`${API_URL}/menu`);
@@ -145,35 +153,56 @@ function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
     
     menuGrid.style.opacity = '0';
     
-    // Sort array copy
-    let productsToRender = [...category.products];
+    // Sort array copy safely
+    let productsToRender = [...(category?.products || [])];
     if (sortOrder === 'asc') {
-        productsToRender.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        productsToRender.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
     } else if (sortOrder === 'desc') {
-        productsToRender.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+        productsToRender.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
     }
     
     setTimeout(() => {
         menuGrid.innerHTML = '';
         
+        if (productsToRender.length === 0) {
+            menuGrid.innerHTML = '<div style="text-align:center; color:var(--color-beige); grid-column: 1/-1;">No se encontraron productos.</div>';
+            menuGrid.style.opacity = '1';
+            return;
+        }
+
         productsToRender.forEach(product => {
+            if (!product || !product.id) return; // Skip broken items
+
             const item = document.createElement('div');
-            item.className = 'menu-item';
+            item.className = 'menu-card';
             
             // Faux Badges
             let badgeHtml = '';
-            if (product.id % 5 === 0) badgeHtml = '<span class="product-badge badge-premium">Premium</span>';
-            else if (product.id % 3 === 0) badgeHtml = '<span class="product-badge badge-nuevo">Nuevo</span>';
+            if (product.id % 5 === 0) badgeHtml = '<span class="menu-card-badge badge-premium">Premium</span>';
+            else if (product.id % 3 === 0) badgeHtml = '<span class="menu-card-badge badge-nuevo">Nuevo</span>';
+
+            const safeName = product.name || 'Producto No Disponible';
+            const safeDesc = product.description || 'Nuestra mezcla especial de la casa, tostado oscuro.';
+            const safePrice = parsePrice(product.price).toFixed(2);
+            
+            // Determinamos un ícono faux según el id
+            const icons = ['☕', '🍵', '🍰', '🥃', '🥐'];
+            const fallbackIcon = icons[product.id % icons.length];
 
             item.innerHTML = `
-                <div class="menu-item-info" onclick="openAddonModal(${product.id})">
-                    <h4>${product.name} ${badgeHtml}</h4>
-                    <p>${product.description || 'Nuestra mezcla especial de la casa.'}</p>
+                <div class="menu-card-img" onclick="openAddonModal(${product.id})" style="cursor:pointer;">
+                    ${badgeHtml}
+                    <button class="btn-favorite-card" onclick="toggleFavorite(this, event)">♡</button>
+                    <span class="menu-card-img-icon">${fallbackIcon}</span>
                 </div>
-                <div class="menu-item-price">
-                    $${parseFloat(product.price).toFixed(2)}
+                <div class="menu-card-body">
+                    <h4>${safeName}</h4>
+                    <p>${safeDesc}</p>
+                    <div class="menu-card-footer">
+                        <div class="menu-card-price">$${safePrice}</div>
+                        <button class="btn-add-card" onclick="openAddonModal(${product.id})">Personalizar</button>
+                    </div>
                 </div>
-                <button class="btn-favorite" onclick="toggleFavorite(this, event)">♡</button>
             `;
             menuGrid.appendChild(item);
         });
@@ -231,9 +260,9 @@ function openAddonModal(product) {
             const label = document.createElement('label');
             label.className = 'addon-label';
             label.innerHTML = `
-                <input type="checkbox" class="addon-checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${addon.price}">
+                <input type="checkbox" class="addon-checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${parsePrice(addon.price)}">
                 <span>${addon.name}</span>
-                <span class="addon-price">+$${parseFloat(addon.price).toFixed(2)}</span>
+                <span class="addon-price">+$${parsePrice(addon.price).toFixed(2)}</span>
             `;
             modalAddons.appendChild(label);
         });
@@ -259,20 +288,20 @@ function openAddonModal(product) {
 function calculateDynamicPrice() {
     if (!currentSelectedProduct) return;
     
-    let basePrice = parseFloat(currentSelectedProduct.price);
+    let basePrice = parsePrice(currentSelectedProduct.price);
     
     // Size Price
     const selectedSize = document.querySelector('input[name="size"]:checked');
-    if (selectedSize) basePrice += parseFloat(selectedSize.dataset.price);
+    if (selectedSize) basePrice += parsePrice(selectedSize.dataset.price);
     
     // Milk Price
     const selectedMilk = document.querySelector('input[name="milk"]:checked');
-    if (selectedMilk) basePrice += parseFloat(selectedMilk.dataset.price);
+    if (selectedMilk) basePrice += parsePrice(selectedMilk.dataset.price);
     
     // Addons
     const selectedAddons = document.querySelectorAll('.addon-checkbox:checked');
     selectedAddons.forEach(cb => {
-        basePrice += parseFloat(cb.dataset.price);
+        basePrice += parsePrice(cb.dataset.price);
     });
     
     modalDynamicPrice.textContent = `$${basePrice.toFixed(2)}`;
@@ -356,7 +385,7 @@ function updateCartUI() {
     let total = 0;
 
     cart.forEach((item, index) => {
-        let baseItemPrice = parseFloat(item.product.price) + (item.extraPrice || 0);
+        let baseItemPrice = parsePrice(item.product.price) + parsePrice(item.extraPrice);
         let itemAddonsTotal = 0;
         let addonsHtml = '';
         
@@ -364,9 +393,9 @@ function updateCartUI() {
             addonsHtml += `<div class="cart-item-meta">${item.variant}</div>`;
         }
 
-        if (item.addons.length > 0) {
+        if (item.addons && item.addons.length > 0) {
             const addonsText = item.addons.map(a => {
-                itemAddonsTotal += a.price;
+                itemAddonsTotal += parsePrice(a.price);
                 return a.name;
             }).join(', ');
             addonsHtml += `<div class="cart-item-meta">+ ${addonsText}</div>`;
@@ -377,7 +406,8 @@ function updateCartUI() {
         }
 
         const unitPrice = baseItemPrice + itemAddonsTotal;
-        const subtotal = unitPrice * item.quantity;
+        const safeQty = parseInt(item.quantity) || 1;
+        const subtotal = unitPrice * safeQty;
         total += subtotal;
 
         const el = document.createElement('div');
@@ -434,12 +464,26 @@ checkoutService.addEventListener('change', (e) => {
 btnPay.onclick = async () => {
     if (cart.length === 0) return;
     
-    // Validaciones E-commerce
-    if (!checkoutName.value.trim()) return showToast('Ingrese su Nombre y Apellido');
-    if (!checkoutPhone.value.trim()) return showToast('Ingrese su Teléfono');
-    if (!checkoutEmail.value.trim()) return showToast('Ingrese su Correo');
-    if (checkoutService.value === 'delivery' && !checkoutAddress.value.trim()) {
-        return showToast('Ingrese su Dirección de Envío');
+    // Validaciones E-commerce con Regex
+    const nameVal = checkoutName.value.trim();
+    const phoneVal = checkoutPhone.value.trim();
+    const emailVal = checkoutEmail.value.trim();
+    const addressVal = checkoutAddress.value.trim();
+    const serviceVal = checkoutService.value;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9\-\+\s]{7,15}$/;
+
+    if (!nameVal) return showToast('El Nombre es obligatorio');
+    
+    if (!phoneVal) return showToast('El Teléfono es obligatorio');
+    if (!phoneRegex.test(phoneVal)) return showToast('Ingrese un Teléfono válido');
+    
+    if (!emailVal) return showToast('El Correo es obligatorio');
+    if (!emailRegex.test(emailVal)) return showToast('Ingrese un Correo válido');
+    
+    if (serviceVal === 'delivery' && !addressVal) {
+        return showToast('La Dirección es obligatoria para envíos a domicilio');
     }
     
     btnPay.disabled = true;

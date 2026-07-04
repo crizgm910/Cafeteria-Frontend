@@ -996,15 +996,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!inputGuests.value) showError(document.getElementById('toggle-guests'), 'error-res-guests');
 
             if (!hasError) {
-                // Success
+                // Submit to Laravel Backend
                 const btnSubmit = document.getElementById('btn-submit-reservation');
                 btnSubmit.textContent = 'Procesando...';
                 btnSubmit.disabled = true;
                 
-                setTimeout(() => {
-                    alert(`¡Reserva confirmada!\nNombre: ${nameEl.value}\nFecha: ${inputDate.value}\nHora: ${inputTime.value}\nInvitados: ${inputGuests.value}`);
-                    btnSubmit.textContent = 'Solicitar Reserva';
-                    btnSubmit.disabled = false;
+                const reservationData = {
+                    name: nameEl.value.trim(),
+                    email: emailEl.value.trim(),
+                    date: inputDate.value,
+                    time: inputTime.value,
+                    guests: parseInt(inputGuests.value)
+                };
+
+                fetch('http://127.0.0.1:8000/api/reservations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(reservationData)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error en la petición');
+                    return response.json();
+                })
+                .then(data => {
+                    showToast('¡Su mesa ha sido reservada con éxito!');
                     resForm.reset();
                     // Reset dropdowns
                     displayDate.textContent = 'Seleccionar Fecha';
@@ -1015,7 +1033,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     inputGuests.value = '';
                     selectedDate = null;
                     renderCalendar();
-                }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error Reserva:', error);
+                    showToast('Ocurrió un error al procesar su reserva.');
+                })
+                .finally(() => {
+                    btnSubmit.textContent = 'Solicitar Reserva';
+                    btnSubmit.disabled = false;
+                });
             }
         });
     }

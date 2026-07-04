@@ -220,47 +220,82 @@
             <h2>Su Cuenta</h2>
             <button id="close-cart-btn" class="close-btn">&times;</button>
         </div>
-        <div class="cart-sidebar-items" id="cart-items">
-            <div class="empty-cart-msg">Aún no ha seleccionado nada.</div>
-        </div>
-        <div class="cart-checkout-options">
-            <!-- Client Info Fields -->
-            <div class="checkout-group">
-                <label>Nombre y Apellido:</label>
-                <input type="text" id="checkout-name" class="modal-input" placeholder="Ej. Arthur Shelby">
-            </div>
-            <div class="checkout-group">
-                <label>Teléfono:</label>
-                <input type="tel" id="checkout-phone" class="modal-input" placeholder="Ej. 555-1234-5678">
-            </div>
-            <div class="checkout-group">
-                <label>Correo Electrónico:</label>
-                <input type="email" id="checkout-email" class="modal-input" placeholder="correo@ejemplo.com">
-            </div>
+        <div class="cart-sidebar-body">
             
-            <div class="checkout-group" style="margin-top: 15px;">
-                <label>Servicio:</label>
-                <select id="checkout-service">
-                    <option value="local">Consumo en Local</option>
-                    <option value="pickup">Para Llevar (Pick-up)</option>
-                    <option value="delivery">Envío a Domicilio</option>
-                </select>
-            </div>
-            
-            <!-- Delivery Address (Hidden by default) -->
-            <div class="checkout-group" id="checkout-address-group" style="display: none;">
-                <label>Dirección de Envío:</label>
-                <input type="text" id="checkout-address" class="modal-input" placeholder="Calle, número, ciudad">
+            <!-- Resumen del Pedido (Acordeón) -->
+            <div class="checkout-section">
+                <div class="checkout-section-header">
+                    <h3 class="checkout-section-title">Resumen del Pedido</h3>
+                    <button class="btn-toggle-section" id="btn-toggle-ticket">Ocultar</button>
+                </div>
+                
+                <!-- Vista Compacta (Oculta por defecto) -->
+                <div id="cart-ticket-compact" class="compact-view" style="display:none;">
+                    <div class="compact-view-text"><span id="compact-ticket-count">0</span> productos &middot; Total: <span id="compact-ticket-total">$0.00</span></div>
+                    <button class="login-text-btn" id="btn-expand-ticket">Ver detalle</button>
+                </div>
+                
+                <!-- Vista Expandida -->
+                <div id="cart-ticket-full" class="ticket-products-list">
+                    <div class="cart-sidebar-items" id="cart-items">
+                        <div class="empty-cart-msg">Aún no ha seleccionado nada.</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="checkout-group">
-                <label>Pago:</label>
-                <select id="checkout-payment">
-                    <option value="card">Tarjeta Crédito/Débito</option>
-                    <option value="cash">Efectivo al recibir</option>
-                    <option value="apple">Billetera Digital (Apple/Google)</option>
-                </select>
+            <!-- Datos del Cliente (Acordeón) -->
+            <div class="checkout-section">
+                <div class="checkout-section-header">
+                    <h3 class="checkout-section-title">Datos del Cliente</h3>
+                    <button class="btn-toggle-section" id="btn-toggle-form">Ocultar</button>
+                </div>
+
+                <!-- Vista Compacta (Oculta por defecto) -->
+                <div id="checkout-form-compact" class="compact-view" style="display:none;">
+                    <div class="compact-view-text" id="compact-form-text">Sin datos</div>
+                    <button class="login-text-btn" id="btn-expand-form">Editar</button>
+                </div>
+
+                <!-- Vista Expandida -->
+                <div id="checkout-form-full" class="cart-checkout-options">
+                    <div class="checkout-group">
+                        <label>Nombre y Apellido:</label>
+                        <input type="text" id="checkout-name" class="modal-input" placeholder="Ej. Arthur Shelby">
+                    </div>
+                    <div class="checkout-group">
+                        <label>Teléfono:</label>
+                        <input type="tel" id="checkout-phone" class="modal-input" placeholder="Ej. 555-1234-5678">
+                    </div>
+                    <div class="checkout-group">
+                        <label>Correo Electrónico:</label>
+                        <input type="email" id="checkout-email" class="modal-input" placeholder="correo@ejemplo.com">
+                    </div>
+                    
+                    <div class="checkout-group" style="margin-top: 15px;">
+                        <label>Servicio:</label>
+                        <select id="checkout-service">
+                            <option value="local">Consumo en Local</option>
+                            <option value="pickup">Para Llevar (Pick-up)</option>
+                            <option value="delivery">Envío a Domicilio</option>
+                        </select>
+                    </div>
+                    
+                    <div class="checkout-group" id="checkout-address-group" style="display: none;">
+                        <label>Dirección de Envío:</label>
+                        <input type="text" id="checkout-address" class="modal-input" placeholder="Calle, número, ciudad">
+                    </div>
+
+                    <div class="checkout-group">
+                        <label>Pago:</label>
+                        <select id="checkout-payment">
+                            <option value="card">Tarjeta Crédito/Débito</option>
+                            <option value="cash">Efectivo al recibir</option>
+                            <option value="apple">Billetera Digital (Apple/Google)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
         </div>
         <div class="cart-sidebar-footer">
             <div class="cart-total-row">

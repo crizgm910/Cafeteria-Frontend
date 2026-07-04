@@ -69,6 +69,59 @@ const searchInput = document.getElementById('menu-search-input');
 
 let currentActiveCategory = null;
 
+// Acordeon y Vistas compactas
+const btnToggleTicket = document.getElementById('btn-toggle-ticket');
+const btnExpandTicket = document.getElementById('btn-expand-ticket');
+const cartTicketCompact = document.getElementById('cart-ticket-compact');
+const cartTicketFull = document.getElementById('cart-ticket-full');
+const compactTicketCount = document.getElementById('compact-ticket-count');
+const compactTicketTotal = document.getElementById('compact-ticket-total');
+
+const btnToggleForm = document.getElementById('btn-toggle-form');
+const btnExpandForm = document.getElementById('btn-expand-form');
+const checkoutFormCompact = document.getElementById('checkout-form-compact');
+const checkoutFormFull = document.getElementById('checkout-form-full');
+const compactFormText = document.getElementById('compact-form-text');
+
+// Togglers lógicos
+function toggleTicketView(forceCompact = null) {
+    const isCompact = forceCompact !== null ? forceCompact : cartTicketFull.style.display !== 'none';
+    if (isCompact) {
+        cartTicketFull.style.display = 'none';
+        cartTicketCompact.style.display = 'flex';
+        btnToggleTicket.textContent = 'Ver';
+    } else {
+        cartTicketFull.style.display = 'block';
+        cartTicketCompact.style.display = 'none';
+        btnToggleTicket.textContent = 'Ocultar';
+    }
+}
+
+function toggleFormView(forceCompact = null) {
+    const isCompact = forceCompact !== null ? forceCompact : checkoutFormFull.style.display !== 'none';
+    if (isCompact) {
+        // Build summary string
+        const nameVal = checkoutName.value.trim() || 'Sin Nombre';
+        const phoneVal = checkoutPhone.value.trim() || 'Sin Teléfono';
+        compactFormText.textContent = `${nameVal} · ${phoneVal}`;
+        
+        checkoutFormFull.style.display = 'none';
+        checkoutFormCompact.style.display = 'flex';
+        btnToggleForm.textContent = 'Ver';
+    } else {
+        checkoutFormFull.style.display = 'flex';
+        checkoutFormCompact.style.display = 'none';
+        btnToggleForm.textContent = 'Ocultar';
+    }
+}
+
+if (btnToggleTicket) {
+    btnToggleTicket.onclick = () => toggleTicketView();
+    btnExpandTicket.onclick = () => toggleTicketView(false);
+    btnToggleForm.onclick = () => toggleFormView();
+    btnExpandForm.onclick = () => toggleFormView(false);
+}
+
 // UTILITY FUNCTIONS
 function parsePrice(val) {
     if (val === null || val === undefined || isNaN(parseFloat(val))) {
@@ -377,6 +430,8 @@ function updateCartUI() {
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = '<div class="empty-cart-msg">Aún no ha seleccionado nada.</div>';
         cartTotalEl.textContent = '$0.00';
+        if (compactTicketCount) compactTicketCount.textContent = '0';
+        if (compactTicketTotal) compactTicketTotal.textContent = '$0.00';
         btnPay.disabled = true;
         return;
     }
@@ -431,6 +486,11 @@ function updateCartUI() {
     });
 
     cartTotalEl.textContent = `$${total.toFixed(2)}`;
+    
+    // Update compact views
+    if (compactTicketCount) compactTicketCount.textContent = cart.length;
+    if (compactTicketTotal) compactTicketTotal.textContent = `$${total.toFixed(2)}`;
+
     btnPay.disabled = false;
 }
 
@@ -449,7 +509,11 @@ window.removeFromCart = function(index) {
     showToast('Producto eliminado');
 };
 
-cartBtn.onclick = () => cartSidebar.classList.add('open');
+cartBtn.onclick = () => {
+    cartSidebar.classList.add('open');
+    // Si hay items, asegurarse de que el ticket empiece expandido
+    if (cart.length > 0) toggleTicketView(false); 
+};
 closeCartBtn.onclick = () => cartSidebar.classList.remove('open');
 
 // Toggle Address Field based on service
@@ -537,6 +601,9 @@ btnPay.onclick = async () => {
             checkoutPhone.value = '';
             checkoutEmail.value = '';
             checkoutAddress.value = '';
+            // Reset accordions
+            toggleFormView(false);
+            toggleTicketView(false);
         } else {
             showToast('Error: ' + (result.message || 'Inventario insuficiente.'));
         }

@@ -953,7 +953,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Update display and hidden input
                 if (toggle) toggle.textContent = text;
-                if (hiddenInput) hiddenInput.value = value;
+                if (hiddenInput) {
+                    hiddenInput.value = value;
+                    hiddenInput.dispatchEvent(new Event('change'));
+                }
                 
                 // Remove error styling if exists
                 const toggleContainer = wrapper.querySelector('.custom-dropdown-toggle');

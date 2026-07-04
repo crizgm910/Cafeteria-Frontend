@@ -161,20 +161,75 @@
             <div class="reservation-box">
                 <h2>Asegure su Mesa</h2>
                 <p>Nuestra capacidad es limitada para garantizar la exclusividad.</p>
-                <form class="reservation-form" id="reservation-form">
-                    <input type="text" id="res-name" placeholder="Su Nombre y Apellido" required>
-                    <input type="email" id="res-email" placeholder="Correo Electrónico" required>
-                    <div class="form-row">
-                        <input type="date" id="res-date" required>
-                        <input type="time" id="res-time" required>
+                <form class="reservation-form" id="reservation-form" autocomplete="off" novalidate>
+                    
+                    <div class="reservation-group">
+                        <input type="text" id="res-name" class="reservation-input" placeholder="Su Nombre y Apellido">
+                        <span class="form-error" id="error-res-name">Este campo es obligatorio.</span>
                     </div>
-                    <select id="res-guests">
-                        <option>Para 1 persona</option>
-                        <option>Para 2 personas</option>
-                        <option>Para 3 personas</option>
-                        <option>Para 4 personas</option>
-                    </select>
-                    <button type="submit" class="btn-primary w-100">Solicitar Reserva</button>
+                    
+                    <div class="reservation-group">
+                        <input type="email" id="res-email" class="reservation-input" placeholder="Correo Electrónico">
+                        <span class="form-error" id="error-res-email">Ingresa un correo válido.</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <!-- Datepicker -->
+                        <div class="reservation-group custom-select-wrapper" id="wrapper-date">
+                            <div class="custom-dropdown-toggle reservation-input" id="toggle-date">
+                                <span id="display-date">Seleccionar Fecha</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="custom-calendar-dropdown" id="dropdown-date">
+                                <div class="calendar-header">
+                                    <button type="button" id="cal-prev">&lt;</button>
+                                    <span id="cal-month-year">Cargando...</span>
+                                    <button type="button" id="cal-next">&gt;</button>
+                                </div>
+                                <div class="calendar-days-header">
+                                    <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span>
+                                </div>
+                                <div class="calendar-grid" id="cal-grid">
+                                    <!-- JS Render -->
+                                </div>
+                            </div>
+                            <input type="hidden" id="res-date">
+                            <span class="form-error" id="error-res-date">Seleccione una fecha.</span>
+                        </div>
+                        
+                        <!-- Timepicker -->
+                        <div class="reservation-group custom-select-wrapper" id="wrapper-time">
+                            <div class="custom-dropdown-toggle reservation-input" id="toggle-time">
+                                <span id="display-time">Seleccionar Hora</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="custom-dropdown-options" id="dropdown-time">
+                                <!-- JS Render -->
+                            </div>
+                            <input type="hidden" id="res-time">
+                            <span class="form-error" id="error-res-time">Seleccione una hora.</span>
+                        </div>
+                    </div>
+
+                    <!-- Guests -->
+                    <div class="reservation-group custom-select-wrapper" id="wrapper-guests">
+                        <div class="custom-dropdown-toggle reservation-input" id="toggle-guests">
+                            <span id="display-guests">Cantidad de personas</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="custom-dropdown-options" id="dropdown-guests">
+                            <div class="dropdown-option" data-value="1">Para 1 persona</div>
+                            <div class="dropdown-option" data-value="2">Para 2 personas</div>
+                            <div class="dropdown-option" data-value="3">Para 3 personas</div>
+                            <div class="dropdown-option" data-value="4">Para 4 personas</div>
+                            <div class="dropdown-option" data-value="5">Para 5 personas</div>
+                            <div class="dropdown-option" data-value="6">Para 6 personas</div>
+                        </div>
+                        <input type="hidden" id="res-guests">
+                        <span class="form-error" id="error-res-guests">Seleccione cantidad de personas.</span>
+                    </div>
+
+                    <button type="submit" class="btn-primary w-100" id="btn-submit-reservation">Solicitar Reserva</button>
                 </form>
             </div>
         </div>

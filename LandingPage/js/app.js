@@ -771,3 +771,255 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+/* ==========================================
+   RESERVATION FORM - CUSTOM PICKERS LOGIC
+   ========================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Setup Time Options
+    const dropdownTime = document.getElementById('dropdown-time');
+    const displayTime = document.getElementById('display-time');
+    const inputTime = document.getElementById('res-time');
+    const wrapperTime = document.getElementById('wrapper-time');
+    
+    if (dropdownTime) {
+        let timeHtml = '';
+        let startHour = 7;
+        for(let i = 0; i < 11; i++) {
+            let hour = startHour + Math.floor(i/2);
+            let mins = i % 2 === 0 ? '00' : '30';
+            let ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            let displayHour = hour > 12 ? hour - 12 : hour;
+            displayHour = displayHour < 10 ? '0' + displayHour : displayHour;
+            let timeString = `${displayHour}:${mins} ${ampm}`;
+            
+            timeHtml += `<div class="dropdown-option" data-value="${timeString}">${timeString}</div>`;
+        }
+        dropdownTime.innerHTML = timeHtml;
+    }
+
+    // 2. Setup Guests Options
+    const displayGuests = document.getElementById('display-guests');
+    const inputGuests = document.getElementById('res-guests');
+    const wrapperGuests = document.getElementById('wrapper-guests');
+    
+    // 3. Dropdown Toggles
+    const wrappers = [
+        document.getElementById('wrapper-date'),
+        wrapperTime,
+        wrapperGuests
+    ];
+
+    wrappers.forEach(wrapper => {
+        if(!wrapper) return;
+        const toggle = wrapper.querySelector('.custom-dropdown-toggle');
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close others
+            wrappers.forEach(w => { if(w !== wrapper && w) w.classList.remove('open') });
+            wrapper.classList.toggle('open');
+            toggle.classList.remove('active');
+        });
+    });
+
+    // 4. Click outside to close
+    document.addEventListener('click', (e) => {
+        wrappers.forEach(wrapper => {
+            if (wrapper && !wrapper.contains(e.target)) {
+                wrapper.classList.remove('open');
+            }
+        });
+    });
+
+    // 5. Select Logic for Time and Guests
+    document.querySelectorAll('.custom-dropdown-options').forEach(optionsContainer => {
+        optionsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('dropdown-option')) {
+                const value = e.target.getAttribute('data-value');
+                const text = e.target.textContent;
+                const wrapper = e.target.closest('.custom-select-wrapper');
+                
+                // Update display and hidden input
+                if (wrapper.id === 'wrapper-time') {
+                    displayTime.textContent = text;
+                    inputTime.value = value;
+                    document.getElementById('error-res-time').style.display = 'none';
+                    document.getElementById('toggle-time').style.borderColor = 'rgba(255,253,208,0.2)';
+                } else if (wrapper.id === 'wrapper-guests') {
+                    displayGuests.textContent = text;
+                    inputGuests.value = value;
+                    document.getElementById('error-res-guests').style.display = 'none';
+                    document.getElementById('toggle-guests').style.borderColor = 'rgba(255,253,208,0.2)';
+                }
+                
+                // Remove selected class from siblings
+                Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
+                e.target.classList.add('selected');
+                
+                wrapper.classList.remove('open');
+            }
+        });
+    });
+
+    // 6. Custom Calendar Logic
+    const calMonthYear = document.getElementById('cal-month-year');
+    const calGrid = document.getElementById('cal-grid');
+    const btnPrev = document.getElementById('cal-prev');
+    const btnNext = document.getElementById('cal-next');
+    const displayDate = document.getElementById('display-date');
+    const inputDate = document.getElementById('res-date');
+    const wrapperDate = document.getElementById('wrapper-date');
+
+    let currentDate = new Date();
+    let selectedDate = null;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    function renderCalendar() {
+        if (!calGrid) return;
+        
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        calMonthYear.textContent = `${monthNames[month]} ${year}`;
+        calGrid.innerHTML = '';
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Empty slots
+        for(let i = 0; i < firstDayOfMonth; i++) {
+            calGrid.innerHTML += `<div class="cal-day empty"></div>`;
+        }
+
+        // Days
+        for(let i = 1; i <= daysInMonth; i++) {
+            const dateObj = new Date(year, month, i);
+            const isPast = dateObj < today;
+            let classes = 'cal-day';
+            
+            if (isPast) classes += ' disabled';
+            if (selectedDate && dateObj.getTime() === selectedDate.getTime()) {
+                classes += ' selected';
+            }
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = classes;
+            dayDiv.textContent = i;
+            
+            if (!isPast) {
+                dayDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectedDate = dateObj;
+                    
+                    // Format Date to DD/MM/YYYY
+                    const d = String(dateObj.getDate()).padStart(2, '0');
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const y = dateObj.getFullYear();
+                    const formattedDate = `${d}/${m}/${y}`;
+                    
+                    displayDate.textContent = formattedDate;
+                    inputDate.value = formattedDate;
+                    document.getElementById('error-res-date').style.display = 'none';
+                    document.getElementById('toggle-date').style.borderColor = 'rgba(255,253,208,0.2)';
+                    
+                    wrapperDate.classList.remove('open');
+                    renderCalendar(); // Re-render to show selected
+                });
+            }
+            
+            calGrid.appendChild(dayDiv);
+        }
+    }
+
+    if (btnPrev) {
+        btnPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+        
+        btnNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+        
+        // Prevent closing modal when clicking inside calendar
+        document.getElementById('dropdown-date').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        renderCalendar();
+    }
+
+    // 7. Form Validation Override
+    const resForm = document.getElementById('reservation-form');
+    if (resForm) {
+        resForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nameEl = document.getElementById('res-name');
+            const emailEl = document.getElementById('res-email');
+            let hasError = false;
+
+            const resetError = (el, errorId) => {
+                document.getElementById(errorId).style.display = 'none';
+                el.style.borderColor = 'rgba(255,253,208,0.2)';
+            };
+            const showError = (el, errorId) => {
+                document.getElementById(errorId).style.display = 'block';
+                el.style.borderColor = '#ffb44d';
+                hasError = true;
+            };
+
+            // Reset
+            resetError(nameEl, 'error-res-name');
+            resetError(emailEl, 'error-res-email');
+            resetError(document.getElementById('toggle-date'), 'error-res-date');
+            resetError(document.getElementById('toggle-time'), 'error-res-time');
+            resetError(document.getElementById('toggle-guests'), 'error-res-guests');
+
+            // Name
+            if (!nameEl.value.trim()) showError(nameEl, 'error-res-name');
+            
+            // Email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailEl.value.trim())) showError(emailEl, 'error-res-email');
+
+            // Date
+            if (!inputDate.value) showError(document.getElementById('toggle-date'), 'error-res-date');
+            
+            // Time
+            if (!inputTime.value) showError(document.getElementById('toggle-time'), 'error-res-time');
+
+            // Guests
+            if (!inputGuests.value) showError(document.getElementById('toggle-guests'), 'error-res-guests');
+
+            if (!hasError) {
+                // Success
+                const btnSubmit = document.getElementById('btn-submit-reservation');
+                btnSubmit.textContent = 'Procesando...';
+                btnSubmit.disabled = true;
+                
+                setTimeout(() => {
+                    alert(`¡Reserva confirmada!\nNombre: ${nameEl.value}\nFecha: ${inputDate.value}\nHora: ${inputTime.value}\nInvitados: ${inputGuests.value}`);
+                    btnSubmit.textContent = 'Solicitar Reserva';
+                    btnSubmit.disabled = false;
+                    resForm.reset();
+                    // Reset dropdowns
+                    displayDate.textContent = 'Seleccionar Fecha';
+                    displayTime.textContent = 'Seleccionar Hora';
+                    displayGuests.textContent = 'Cantidad de personas';
+                    inputDate.value = '';
+                    inputTime.value = '';
+                    inputGuests.value = '';
+                    selectedDate = null;
+                    renderCalendar();
+                }, 1500);
+            }
+        });
+    }
+});

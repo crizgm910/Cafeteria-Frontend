@@ -282,7 +282,17 @@ function toggleFavorite(btn, event) {
    KIOSK LOGIC (Cart, Modal & Checkout)
    ========================================== */
 
-function openAddonModal(product) {
+function openAddonModal(productId) {
+    let product = null;
+    for (const category of menuData) {
+        const p = category.products.find(p => p.id === productId);
+        if (p) {
+            product = p;
+            break;
+        }
+    }
+    if (!product) return;
+
     currentSelectedProduct = product;
     modalProductName.textContent = product.name;
     modalNotes.value = '';

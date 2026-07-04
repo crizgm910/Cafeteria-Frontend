@@ -546,6 +546,10 @@ btnPay.onclick = async () => {
     btnPay.disabled = true;
     btnPay.textContent = 'Procesando Pago...';
 
+    let mappedService = 'dine_in';
+    if (serviceVal === 'pickup') mappedService = 'takeout';
+    if (serviceVal === 'delivery') mappedService = 'delivery';
+
     const payload = {
         items: cart.map(item => ({
             product_id: item.product.id,
@@ -555,7 +559,7 @@ btnPay.onclick = async () => {
         })),
         payment_method: checkoutPayment ? checkoutPayment.value : 'efectivo',
         customer_name: nameVal,
-        order_type: serviceVal
+        order_type: mappedService
     };
 
     try {
@@ -958,15 +962,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayDiv.addEventListener('click', (e) => {
                     e.stopPropagation();
                     selectedDate = dateObj;
-                    
-                    // Format Date to DD/MM/YYYY
                     const d = String(dateObj.getDate()).padStart(2, '0');
                     const m = String(dateObj.getMonth() + 1).padStart(2, '0');
                     const y = dateObj.getFullYear();
-                    const formattedDate = `${d}/${m}/${y}`;
                     
-                    displayDate.textContent = formattedDate;
-                    inputDate.value = formattedDate;
+                    // Backend expects YYYY-MM-DD
+                    const isoDate = `${y}-${m}-${d}`;
+                    const displayDateString = `${d}/${m}/${y}`;
+                    
+                    displayDate.textContent = displayDateString;
+                    inputDate.value = isoDate;
                     document.getElementById('error-res-date').style.display = 'none';
                     document.getElementById('toggle-date').style.borderColor = 'rgba(255,253,208,0.2)';
                     

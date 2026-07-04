@@ -549,10 +549,13 @@ btnPay.onclick = async () => {
     const payload = {
         items: cart.map(item => ({
             product_id: item.product.id,
-            quantity: 1,
+            quantity: item.quantity,
             notes: item.notes || null,
-            addons: item.addons.map(a => a.id)
-        }))
+            add_ons: item.addons.map(a => a.id)
+        })),
+        payment_method: checkoutPayment ? checkoutPayment.value : 'efectivo',
+        customer_name: nameVal,
+        order_type: serviceVal
     };
 
     try {
@@ -568,8 +571,8 @@ btnPay.onclick = async () => {
         const result = await response.json();
 
         if (response.ok) {
-            // Generar número de orden ficticio
-            const orderNum = 'TGR-' + Math.floor(Math.random() * 90000 + 10000);
+            // Usar el ticket_id real devuelto por Laravel
+            const orderNum = 'TGR-' + result.ticket_id.toString().padStart(4, '0');
             successOrderId.textContent = orderNum;
             successOrderTotal.textContent = cartTotalEl.textContent;
             
@@ -753,14 +756,59 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Reservation Form Handler
     const resForm = document.getElementById('reservation-form');
+    const resBtn = resForm ? resForm.querySelector('button[type="submit"]') : null;
+    
     if (resForm) {
-        resForm.onsubmit = (e) => {
+        resForm.onsubmit = async (e) => {
             e.preventDefault();
             const name = document.getElementById('res-name').value;
+            const email = document.getElementById('res-email').value;
             const date = document.getElementById('res-date').value;
             const time = document.getElementById('res-time').value;
-            alert(`Estimado/a ${name},\nSu solicitud de reserva para el ${date} a las ${time} ha sido recibida.\nUn concierge se pondrá en contacto pronto para confirmar.`);
-            resForm.reset();
+            const guests = document.getElementById('res-guests').value;
+            
+            if (!name || !email || !date || !time || !guests) {
+                return showToast('Por favor, complete todos los campos de la reserva.');
+            }
+            
+            if (resBtn) {
+                resBtn.disabled = true;
+                resBtn.textContent = 'Procesando...';
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/reservations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, date, time, guests })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Estimado/a ${name},\nSu solicitud de reserva para el ${date} a las ${time} ha sido recibida y registrada en el Staff Portal.\nUn concierge se pondrá en contacto pronto para confirmar.`);
+                    resForm.reset();
+                    
+                    // Resetear los selectores custom
+                    const timeDisplay = document.getElementById('display-time');
+                    if (timeDisplay) timeDisplay.textContent = 'Seleccione una hora';
+                    const guestsDisplay = document.getElementById('display-guests');
+                    if (guestsDisplay) guestsDisplay.textContent = 'Cantidad de Personas';
+                } else {
+                    showToast('Error: ' + (result.message || 'No se pudo crear la reserva.'));
+                }
+            } catch (error) {
+                console.error('Error Reserva:', error);
+                showToast('Ocurrió un error de conexión al solicitar la reserva.');
+            } finally {
+                if (resBtn) {
+                    resBtn.disabled = false;
+                    resBtn.textContent = 'Solicitar Reserva VIP';
+                }
+            }
         };
     }
 });

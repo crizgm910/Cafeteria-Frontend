@@ -310,25 +310,38 @@ function openAddonModal(productId) {
     modalNotes.value = '';
     modalAddons.innerHTML = '';
     
-    // Generar notas de cata ficticias pero elegantes basadas en el id (para consistencia)
-    const acidity = (product.id % 5) + 1;
-    const body = ((product.id * 2) % 5) + 1;
-    const aroma = ((product.id * 3) % 5) + 1;
-    
-    modalTastingNotes.innerHTML = `
-        <div class="tasting-note">
-            <span class="tasting-label">Acidez</span>
-            <span class="tasting-stars">${'★'.repeat(acidity)}${'☆'.repeat(5-acidity)}</span>
-        </div>
-        <div class="tasting-note">
-            <span class="tasting-label">Cuerpo</span>
-            <span class="tasting-stars">${'★'.repeat(body)}${'☆'.repeat(5-body)}</span>
-        </div>
-        <div class="tasting-note">
-            <span class="tasting-label">Aroma</span>
-            <span class="tasting-stars">${'★'.repeat(aroma)}${'☆'.repeat(5-aroma)}</span>
-        </div>
-    `;
+    // Solo mostrar notas de cata y variantes para bebidas (categorías 1 y 2)
+    if (product.category_id === 1 || product.category_id === 2) {
+        // Generar notas de cata ficticias pero elegantes basadas en el id (para consistencia)
+        const acidity = (product.id % 5) + 1;
+        const body = ((product.id * 2) % 5) + 1;
+        const aroma = ((product.id * 3) % 5) + 1;
+        
+        modalTastingNotes.innerHTML = `
+            <div class="tasting-note">
+                <span class="tasting-label">Acidez</span>
+                <span class="tasting-stars">${'★'.repeat(acidity)}${'☆'.repeat(5-acidity)}</span>
+            </div>
+            <div class="tasting-note">
+                <span class="tasting-label">Cuerpo</span>
+                <span class="tasting-stars">${'★'.repeat(body)}${'☆'.repeat(5-body)}</span>
+            </div>
+            <div class="tasting-note">
+                <span class="tasting-label">Aroma</span>
+                <span class="tasting-stars">${'★'.repeat(aroma)}${'☆'.repeat(5-aroma)}</span>
+            </div>
+        `;
+        modalTastingNotes.style.display = 'flex';
+        
+        // Reset variants
+        document.querySelector('input[name="size"][value="regular"]').checked = true;
+        document.querySelector('input[name="milk"][value="entera"]').checked = true;
+        modalVariants.style.display = 'block';
+    } else {
+        modalTastingNotes.innerHTML = '';
+        modalTastingNotes.style.display = 'none';
+        modalVariants.style.display = 'none';
+    }
     
     if (product.addons && product.addons.length > 0) {
         product.addons.forEach(addon => {
@@ -344,11 +357,6 @@ function openAddonModal(productId) {
     } else {
         modalAddons.innerHTML = '<p style="color: var(--color-beige); opacity: 0.5;">No hay complementos disponibles para este producto.</p>';
     }
-
-    // Reset variants
-    document.querySelector('input[name="size"][value="regular"]').checked = true;
-    document.querySelector('input[name="milk"][value="entera"]').checked = true;
-    modalVariants.style.display = 'block'; // Mostrar variantes siempre para simular
 
     calculateDynamicPrice();
     

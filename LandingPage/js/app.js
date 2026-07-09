@@ -647,6 +647,9 @@ btnPay.onclick = async () => {
     } finally {
         btnPay.textContent = 'Finalizar Pedido';
         if (cart.length > 0) btnPay.disabled = false;
+    }
+};
+
 // Success Modal Logic
 const closeSuccessModal = () => successModal.classList.remove('open');
 btnCloseSuccess.onclick = closeSuccessModal;

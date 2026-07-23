@@ -1,4 +1,5 @@
-const API_URL = 'http://127.0.0.1:8000/api';
+const API_URL = String(window.TGR_CONFIG?.apiBaseUrl || '').replace(/\/$/, '');
+if (!API_URL) throw new Error('Falta configurar apiBaseUrl en js/config.js');
 
 const menuFilters = document.getElementById('menu-filters');
 const menuGrid = document.getElementById('menu-grid');
@@ -7,7 +8,33 @@ let menuData = [];
 let cart = [];
 let lastOrderCart = [];
 let lastOrderTotal = "$0.00";
+let lastOrderSubtotal = 0;
+let lastOrderTax = 0;
 let currentSelectedProduct = null;
+let checkoutAttemptKey = null;
+let lastOrderCustomer = '';
+let lastOrderService = 'dine_in';
+let lastTrackingCredentials = null;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function safeImageUrl(value) {
+    if (!value) return null;
+
+    try {
+        const url = new URL(value, window.location.href);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+    } catch {
+        return null;
+    }
+}
 
 // Cart UI Elements
 const cartBtn = document.getElementById('cart-floating-btn');
@@ -35,8 +62,6 @@ const modalDynamicPrice = document.getElementById('modal-dynamic-price');
 const checkoutName = document.getElementById('checkout-name');
 const checkoutPhone = document.getElementById('checkout-phone');
 const checkoutEmail = document.getElementById('checkout-email');
-const checkoutAddressGroup = document.getElementById('checkout-address-group');
-const checkoutAddress = document.getElementById('checkout-address');
 
 // Success Modal
 const successModal = document.getElementById('success-modal');
@@ -45,6 +70,8 @@ const btnSuccessClose = document.getElementById('btn-success-close');
 const btnPrintTicket = document.getElementById('btn-print-ticket');
 const successOrderId = document.getElementById('success-order-id');
 const successOrderTotal = document.getElementById('success-order-total');
+const successOrderStatus = document.getElementById('success-order-status');
+const btnTrackOrder = document.getElementById('btn-track-order');
 
 // Toasts
 const toastContainer = document.getElementById('toast-container');
@@ -227,18 +254,16 @@ function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
         }
 
         productsToRender.forEach(product => {
-            if (!product || !product.id) return; // Skip broken items
+            const productId = Number(product?.id);
+            if (!Number.isInteger(productId) || productId <= 0) return;
 
             const item = document.createElement('div');
             item.className = 'menu-card';
             
-            // Faux Badges
-            let badgeHtml = '';
-            if (product.id % 5 === 0) badgeHtml = '<span class="menu-card-badge badge-premium">Premium</span>';
-            else if (product.id % 3 === 0) badgeHtml = '<span class="menu-card-badge badge-nuevo">Nuevo</span>';
+            const badgeHtml = '';
 
-            const safeName = product.name || 'Producto No Disponible';
-            const safeDesc = product.description || 'Nuestra mezcla especial de la casa, tostado oscuro.';
+            const safeName = escapeHtml(product.name || 'Producto No Disponible');
+            const safeDesc = escapeHtml(product.description || 'Nuestra mezcla especial de la casa, tostado oscuro.');
             const safePrice = parsePrice(product.price).toFixed(2);
             
             // Determinamos un ícono faux según el id
@@ -248,16 +273,16 @@ function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
             // Background image si existe
             let imgHtml = '';
             let style = 'cursor:pointer;';
-            if (product.image_url) {
-                style += ` background-image: url('${product.image_url}'); background-size: cover; background-position: center;`;
+            const imageUrl = safeImageUrl(product.image_url);
+            if (imageUrl) {
+                style += ' background-size: cover; background-position: center;';
             } else {
                 imgHtml = `<span class="menu-card-img-icon">${fallbackIcon}</span>`;
             }
 
             item.innerHTML = `
-                <div class="menu-card-img" onclick="openAddonModal(${product.id})" style="${style}">
+                <div class="menu-card-img" data-action="open-product" data-product-id="${productId}" role="button" tabindex="0" style="${style}">
                     ${badgeHtml}
-                    <button class="btn-favorite-card" onclick="toggleFavorite(this, event)">♡</button>
                     ${imgHtml}
                 </div>
                 <div class="menu-card-body">
@@ -265,10 +290,13 @@ function renderMenuCategory(category, isSearch = false, sortOrder = 'default') {
                     <p>${safeDesc}</p>
                     <div class="menu-card-footer">
                         <div class="menu-card-price">$${safePrice}</div>
-                        <button class="btn-add-card" onclick="openAddonModal(${product.id})">Personalizar</button>
+                        <button class="btn-add-card" data-action="open-product" data-product-id="${productId}">Personalizar</button>
                     </div>
                 </div>
             `;
+            if (imageUrl) {
+                item.querySelector('.menu-card-img').style.backgroundImage = `url("${imageUrl.replaceAll('"', '%22')}")`;
+            }
             menuGrid.appendChild(item);
         });
         
@@ -310,47 +338,24 @@ function openAddonModal(productId) {
     modalNotes.value = '';
     modalAddons.innerHTML = '';
     
-    // Solo mostrar notas de cata y variantes para bebidas (categorías 1 y 2)
-    if (product.category_id === 1 || product.category_id === 2) {
-        // Generar notas de cata ficticias pero elegantes basadas en el id (para consistencia)
-        const acidity = (product.id % 5) + 1;
-        const body = ((product.id * 2) % 5) + 1;
-        const aroma = ((product.id * 3) % 5) + 1;
-        
-        modalTastingNotes.innerHTML = `
-            <div class="tasting-note">
-                <span class="tasting-label">Acidez</span>
-                <span class="tasting-stars">${'★'.repeat(acidity)}${'☆'.repeat(5-acidity)}</span>
-            </div>
-            <div class="tasting-note">
-                <span class="tasting-label">Cuerpo</span>
-                <span class="tasting-stars">${'★'.repeat(body)}${'☆'.repeat(5-body)}</span>
-            </div>
-            <div class="tasting-note">
-                <span class="tasting-label">Aroma</span>
-                <span class="tasting-stars">${'★'.repeat(aroma)}${'☆'.repeat(5-aroma)}</span>
-            </div>
-        `;
-        modalTastingNotes.style.display = 'flex';
-        
-        // Reset variants
-        document.querySelector('input[name="size"][value="regular"]').checked = true;
-        document.querySelector('input[name="milk"][value="entera"]').checked = true;
-        modalVariants.style.display = 'block';
-    } else {
-        modalTastingNotes.innerHTML = '';
-        modalTastingNotes.style.display = 'none';
-        modalVariants.style.display = 'none';
-    }
+    // Las notas de cata y variantes simuladas permanecen ocultas hasta contar
+    // con un modelo autoritativo de Laravel.
+    modalTastingNotes.replaceChildren();
+    modalTastingNotes.style.display = 'none';
+    modalVariants.style.display = 'none';
     
-    if (product.addons && product.addons.length > 0) {
-        product.addons.forEach(addon => {
+    if (product.add_ons && product.add_ons.length > 0) {
+        product.add_ons.forEach(addon => {
+            const addonId = Number(addon.id);
+            if (!Number.isInteger(addonId) || addonId <= 0) return;
+            const addonName = escapeHtml(addon.name || 'Complemento');
+            const addonPrice = parsePrice(addon.effective_price ?? addon.price_adjustment);
             const label = document.createElement('label');
             label.className = 'addon-label';
             label.innerHTML = `
-                <input type="checkbox" class="addon-checkbox" value="${addon.id}" data-name="${addon.name}" data-price="${parsePrice(addon.price)}">
-                <span>${addon.name}</span>
-                <span class="addon-price">+$${parsePrice(addon.price).toFixed(2)}</span>
+                <input type="checkbox" class="addon-checkbox" value="${addonId}" data-name="${addonName}" data-price="${addonPrice}" ${addon.selected_by_default ? 'checked' : ''}>
+                <span>${addonName}</span>
+                <span class="addon-price">+$${addonPrice.toFixed(2)}</span>
             `;
             modalAddons.appendChild(label);
         });
@@ -373,15 +378,7 @@ function calculateDynamicPrice() {
     
     let basePrice = parsePrice(currentSelectedProduct.price);
     
-    // Size Price
-    const selectedSize = document.querySelector('input[name="size"]:checked');
-    if (selectedSize) basePrice += parsePrice(selectedSize.dataset.price);
-    
-    // Milk Price
-    const selectedMilk = document.querySelector('input[name="milk"]:checked');
-    if (selectedMilk) basePrice += parsePrice(selectedMilk.dataset.price);
-    
-    // Addons
+    // Solo los complementos devueltos por Laravel modifican el precio.
     const selectedAddons = document.querySelectorAll('.addon-checkbox:checked');
     selectedAddons.forEach(cb => {
         basePrice += parsePrice(cb.dataset.price);
@@ -400,6 +397,9 @@ btnCancelAddon.onclick = closeAddonModal;
 btnConfirmAddon.onclick = () => {
     if (!currentSelectedProduct) return;
 
+    // Conservar la referencia antes de cerrar el modal: closeAddonModal()
+    // limpia currentSelectedProduct para evitar reutilizar una selección vieja.
+    const addedProduct = currentSelectedProduct;
     const selectedAddons = [];
     const checkboxes = modalAddons.querySelectorAll('input[type="checkbox"]:checked');
     
@@ -411,27 +411,14 @@ btnConfirmAddon.onclick = () => {
         });
     });
 
-    const selectedSize = document.querySelector('input[name="size"]:checked');
-    const selectedMilk = document.querySelector('input[name="milk"]:checked');
-    
     let variantName = "";
     let extraPrice = 0;
-    
-    if (selectedSize && selectedSize.value !== "regular") {
-        variantName += `[Tamaño: Grande] `;
-        extraPrice += parseFloat(selectedSize.dataset.price);
-    }
-    
-    if (selectedMilk && selectedMilk.value !== "entera") {
-        variantName += `[Leche: ${selectedMilk.nextSibling.textContent.trim().split(' ')[0]}] `;
-        extraPrice += parseFloat(selectedMilk.dataset.price);
-    }
 
     const notes = modalNotes.value.trim();
 
     // Check if similar item exists in cart to increase quantity
     const existingIndex = cart.findIndex(item => 
-        item.product.id === currentSelectedProduct.id && 
+        item.product.id === addedProduct.id &&
         JSON.stringify(item.addons) === JSON.stringify(selectedAddons) &&
         item.variant === variantName
     );
@@ -440,7 +427,7 @@ btnConfirmAddon.onclick = () => {
         cart[existingIndex].quantity += 1;
     } else {
         cart.push({
-            product: currentSelectedProduct,
+            product: addedProduct,
             addons: selectedAddons,
             notes: notes,
             variant: variantName,
@@ -450,8 +437,9 @@ btnConfirmAddon.onclick = () => {
     }
 
     closeAddonModal();
+    checkoutAttemptKey = null;
     updateCartUI();
-    showToast(`${currentSelectedProduct.name} agregado a la cuenta`);
+    showToast(`${addedProduct.name} agregado a la cuenta`);
 };
 
 function updateCartUI() {
@@ -475,19 +463,19 @@ function updateCartUI() {
         let addonsHtml = '';
         
         if (item.variant) {
-            addonsHtml += `<div class="cart-item-meta">${item.variant}</div>`;
+            addonsHtml += `<div class="cart-item-meta">${escapeHtml(item.variant)}</div>`;
         }
 
         if (item.addons && item.addons.length > 0) {
             const addonsText = item.addons.map(a => {
                 itemAddonsTotal += parsePrice(a.price);
-                return a.name;
+                return escapeHtml(a.name);
             }).join(', ');
             addonsHtml += `<div class="cart-item-meta">+ ${addonsText}</div>`;
         }
 
         if (item.notes) {
-            addonsHtml += `<div class="cart-item-meta" style="font-style:italic">Nota: ${item.notes}</div>`;
+            addonsHtml += `<div class="cart-item-meta" style="font-style:italic">Nota: ${escapeHtml(item.notes)}</div>`;
         }
 
         const unitPrice = baseItemPrice + itemAddonsTotal;
@@ -499,17 +487,17 @@ function updateCartUI() {
         el.className = 'cart-item';
         el.innerHTML = `
             <div class="cart-item-header">
-                <h4>${item.product.name}</h4>
+                <h4>${escapeHtml(item.product.name)}</h4>
                 <span class="price">$${subtotal.toFixed(2)}</span>
             </div>
             ${addonsHtml}
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
                 <div class="cart-item-qty">
-                    <button class="btn-qty" onclick="changeCartQty(${index}, -1)">-</button>
-                    <span class="qty-display">${item.quantity}</span>
-                    <button class="btn-qty" onclick="changeCartQty(${index}, 1)">+</button>
+                    <button class="btn-qty" data-action="cart-quantity" data-index="${index}" data-delta="-1">-</button>
+                    <span class="qty-display">${safeQty}</span>
+                    <button class="btn-qty" data-action="cart-quantity" data-index="${index}" data-delta="1">+</button>
                 </div>
-                <button class="btn-remove" onclick="removeFromCart(${index})">Eliminar</button>
+                <button class="btn-remove" data-action="cart-remove" data-index="${index}">Eliminar</button>
             </div>
         `;
         cartItemsContainer.appendChild(el);
@@ -525,6 +513,7 @@ function updateCartUI() {
 }
 
 window.changeCartQty = function(index, delta) {
+    checkoutAttemptKey = null;
     cart[index].quantity += delta;
     if (cart[index].quantity <= 0) {
         removeFromCart(index);
@@ -534,6 +523,7 @@ window.changeCartQty = function(index, delta) {
 };
 
 window.removeFromCart = function(index) {
+    checkoutAttemptKey = null;
     cart.splice(index, 1);
     updateCartUI();
     showToast('Producto eliminado');
@@ -555,7 +545,6 @@ btnPay.onclick = async () => {
     const nameVal = checkoutName.value.trim();
     const phoneVal = checkoutPhone.value.trim();
     const emailVal = checkoutEmail.value.trim();
-    const addressVal = checkoutAddress.value.trim();
     const serviceVal = checkoutService.value;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -566,19 +555,13 @@ btnPay.onclick = async () => {
     if (!phoneVal) return showToast('El Teléfono es obligatorio');
     if (!phoneRegex.test(phoneVal)) return showToast('Ingrese un Teléfono válido');
     
-    if (!emailVal) return showToast('El Correo es obligatorio');
-    if (!emailRegex.test(emailVal)) return showToast('Ingrese un Correo válido');
-    
-    if (serviceVal === 'delivery' && !addressVal) {
-        return showToast('La Dirección es obligatoria para envíos a domicilio');
-    }
+    if (emailVal && !emailRegex.test(emailVal)) return showToast('Ingrese un Correo válido');
     
     btnPay.disabled = true;
-    btnPay.textContent = 'Procesando Pago...';
+    btnPay.textContent = 'Registrando Pedido...';
 
     let mappedService = 'dine_in';
     if (serviceVal === 'pickup') mappedService = 'takeout';
-    if (serviceVal === 'delivery') mappedService = 'delivery';
 
     const payload = {
         items: cart.map(item => ({
@@ -587,17 +570,23 @@ btnPay.onclick = async () => {
             notes: item.notes || null,
             add_ons: item.addons.map(a => a.id)
         })),
-        payment_method: checkoutPayment ? checkoutPayment.value : 'efectivo',
+        payment_method: 'pay_at_pickup',
         customer_name: nameVal,
+        customer_phone: phoneVal,
+        customer_email: emailVal || null,
         order_type: mappedService
     };
+
+    checkoutAttemptKey ??= window.crypto?.randomUUID?.()
+        || `tgr-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
     try {
         const response = await fetch(`${API_URL}/checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Idempotency-Key': checkoutAttemptKey,
             },
             body: JSON.stringify(payload)
         });
@@ -605,31 +594,30 @@ btnPay.onclick = async () => {
         const result = await response.json();
 
         if (response.ok) {
+            checkoutAttemptKey = null;
             // Usar el ticket_id real devuelto por Laravel
-            const orderNum = 'TGR-' + result.ticket_id.toString().padStart(4, '0');
+            const orderNum = result.ticket_number;
             successOrderId.textContent = orderNum;
-            successOrderTotal.textContent = cartTotalEl.textContent;
-            
-            // Guardar en LocalStorage (Historial de Pedidos)
-            saveOrderToHistory({
-                id: orderNum,
-                date: new Date().toLocaleDateString(),
-                total: cartTotalEl.textContent,
-                status: 'Preparando',
-                items: cart.map(item => `${item.quantity}x ${item.product.name}`).join(', ')
-            });
+            successOrderTotal.textContent = `$${parsePrice(result.total).toFixed(2)}`;
+            successOrderStatus.textContent = 'Pendiente';
+            lastTrackingCredentials = {
+                ticketNumber: result.ticket_number,
+                token: result.tracking_token,
+            };
+            sessionStorage.setItem('tgr_last_tracking', JSON.stringify(lastTrackingCredentials));
             
             lastOrderCart = [...cart];
-            lastOrderTotal = cartTotalEl.textContent;
+            lastOrderSubtotal = parsePrice(result.subtotal);
+            lastOrderTax = parsePrice(result.tax);
+            lastOrderTotal = `$${parsePrice(result.total).toFixed(2)}`;
+            lastOrderCustomer = nameVal;
+            lastOrderService = mappedService;
             
             cart = [];
             updateCartUI();
             
-            if (payload.payment_method === 'cash' || payload.payment_method === 'efectivo') {
-                btnPrintTicket.style.display = 'none';
-            } else {
-                btnPrintTicket.style.display = 'block';
-            }
+            btnPrintTicket.style.display = 'block';
+            showToast(result.payment_message || 'Pedido registrado. Paga en caja al recogerlo.');
             
             // Show Success Modal
             successModal.classList.add('open');
@@ -642,7 +630,6 @@ btnPay.onclick = async () => {
             checkoutName.value = '';
             checkoutPhone.value = '';
             checkoutEmail.value = '';
-            checkoutAddress.value = '';
             // Reset accordions
             toggleFormView(false);
             toggleTicketView(false);
@@ -663,17 +650,82 @@ const closeSuccessModal = () => successModal.classList.remove('open');
 btnCloseSuccess.onclick = closeSuccessModal;
 btnSuccessClose.onclick = closeSuccessModal;
 
+const statusLabels = {
+    pending: 'Pendiente',
+    paid: 'Pagado y confirmado',
+    confirmed: 'Confirmado',
+    preparing: 'En preparación',
+    ready: 'Listo para recoger',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
+};
+
+document.addEventListener('click', event => {
+    const actionTarget = event.target.closest('[data-action]');
+    if (!actionTarget) return;
+    if (actionTarget.dataset.action === 'open-product') {
+        openAddonModal(Number(actionTarget.dataset.productId));
+    }
+    if (actionTarget.dataset.action === 'cart-quantity') {
+        changeCartQty(Number(actionTarget.dataset.index), Number(actionTarget.dataset.delta));
+    }
+    if (actionTarget.dataset.action === 'cart-remove') {
+        removeFromCart(Number(actionTarget.dataset.index));
+    }
+});
+
+document.addEventListener('keydown', event => {
+    const target = event.target.closest('[data-action="open-product"][role="button"]');
+    if (!target || !['Enter', ' '].includes(event.key)) return;
+    event.preventDefault();
+    openAddonModal(Number(target.dataset.productId));
+});
+
+btnTrackOrder.onclick = async () => {
+    if (!lastTrackingCredentials) {
+        try {
+            lastTrackingCredentials = JSON.parse(sessionStorage.getItem('tgr_last_tracking'));
+        } catch {
+            lastTrackingCredentials = null;
+        }
+    }
+
+    if (!lastTrackingCredentials?.ticketNumber || !lastTrackingCredentials?.token) {
+        return showToast('No hay un pedido reciente para consultar.');
+    }
+
+    btnTrackOrder.disabled = true;
+    btnTrackOrder.textContent = 'Consultando...';
+
+    try {
+        const { ticketNumber, token } = lastTrackingCredentials;
+        const response = await fetch(
+            `${API_URL}/orders/${encodeURIComponent(ticketNumber)}/status?token=${encodeURIComponent(token)}`,
+            { headers: { Accept: 'application/json' } }
+        );
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.message || 'No fue posible consultar el pedido.');
+
+        successOrderStatus.textContent = statusLabels[result.status] || result.status;
+        showToast(`Estado actualizado: ${successOrderStatus.textContent}.`);
+    } catch (error) {
+        showToast(error.message || 'No fue posible consultar el pedido.');
+    } finally {
+        btnTrackOrder.disabled = false;
+        btnTrackOrder.textContent = 'Consultar estado';
+    }
+};
+
 btnPrintTicket.onclick = () => {
     const orderNum = successOrderId.textContent;
     const win = window.open('', '_blank', 'width=400,height=600');
     
     const d = new Date();
     const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const checkoutPayment = document.getElementById('checkout-payment');
-    const paymentMethodStr = (checkoutPayment && checkoutPayment.value !== 'cash' && checkoutPayment.value !== 'efectivo') ? 'Tarjeta' : 'Efectivo';
-    const customerName = document.getElementById('checkout-name').value;
-    const serviceVal = document.getElementById('checkout-service').value;
-    const orderType = serviceVal === 'takeaway' ? 'Para llevar' : 'Comer aquí';
+    const paymentMethodStr = 'Pendiente al recoger';
+    const customerName = lastOrderCustomer;
+    const orderType = lastOrderService === 'takeout' ? 'Para llevar' : 'Comer aquí';
     
     let itemsHtml = '';
     let totalCalc = 0;
@@ -684,29 +736,30 @@ btnPrintTicket.onclick = () => {
         if (item.addons && item.addons.length > 0) {
             item.addons.forEach(a => {
                 addonsTotal += parsePrice(a.price);
-                addonsListHtml += `<div style="display:flex; justify-content:space-between; font-size:1rem; padding-left:15px; color:#555;"><span>+ ${a.name}</span></div>`;
+                addonsListHtml += `<div style="display:flex; justify-content:space-between; font-size:1rem; padding-left:15px; color:#555;"><span>+ ${escapeHtml(a.name)}</span></div>`;
             });
         }
         let unitPrice = basePrice + parsePrice(item.extraPrice) + addonsTotal;
         let itemSubtotal = unitPrice * item.quantity;
         totalCalc += itemSubtotal;
         
-        itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:0;"><strong style="font-size:1.2rem;">${item.quantity} x ${item.product.name}</strong><strong style="font-size:1.2rem;">$${itemSubtotal.toFixed(2)}</strong></div>`;
+        itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:0;"><strong style="font-size:1.2rem;">${Number(item.quantity) || 1} x ${escapeHtml(item.product.name)}</strong><strong style="font-size:1.2rem;">$${itemSubtotal.toFixed(2)}</strong></div>`;
         itemsHtml += addonsListHtml;
         if (item.notes) {
-            itemsHtml += `<div style="font-size:1rem; padding-left:15px; font-style:italic;">Nota: ${item.notes}</div>`;
+            itemsHtml += `<div style="font-size:1rem; padding-left:15px; font-style:italic;">Nota: ${escapeHtml(item.notes)}</div>`;
         }
         itemsHtml += `<div style="margin-bottom:10px;"></div>`;
     });
     
-    const subtotal = totalCalc / 1.16;
-    const iva = totalCalc - subtotal;
+    const subtotal = lastOrderSubtotal;
+    const iva = lastOrderTax;
     
     win.document.write(`
         <html>
         <head>
-            <title>Ticket ${orderNum}</title>
+            <title>Ticket ${escapeHtml(orderNum)}</title>
             <style>
+                @page { size: 80mm auto; margin: 4mm; }
                 body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 20px; color: #000; }
                 h1 { text-align: center; font-size: 1.8rem; margin-bottom: 5px; text-transform: uppercase; }
                 .text-center { text-align: center; }
@@ -716,11 +769,12 @@ btnPrintTicket.onclick = () => {
         </head>
         <body>
             <h1>TGR RECEIPT</h1>
-            <p class="text-center" style="font-size:1.3rem; font-weight:bold; margin-top:0;">PEDIDO #${orderNum}</p>
+            <p class="text-center" style="margin:0;">COMPROBANTE NO FISCAL</p>
+            <p class="text-center" style="font-size:1.3rem; font-weight:bold; margin-top:0;">PEDIDO #${escapeHtml(orderNum)}</p>
             
             <div class="details">
-                <p style="margin:2px 0;"><strong>Fecha:</strong> ${dateStr}</p>
-                ${customerName ? `<p style="margin:2px 0;"><strong>Cliente:</strong> ${customerName}</p>` : ''}
+                <p style="margin:2px 0;"><strong>Fecha:</strong> ${escapeHtml(dateStr)}</p>
+                ${customerName ? `<p style="margin:2px 0;"><strong>Cliente:</strong> ${escapeHtml(customerName)}</p>` : ''}
                 <p style="margin:2px 0;"><strong>Tipo:</strong> ${orderType}</p>
                 <p style="margin:2px 0;"><strong>Pago:</strong> ${paymentMethodStr}</p>
             </div>
@@ -729,8 +783,8 @@ btnPrintTicket.onclick = () => {
             
             <div class="totals">
                 <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
-                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><span>IVA (16%)</span><span>$${iva.toFixed(2)}</span></div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.4rem; margin-top:5px;"><span>TOTAL</span><span>$${totalCalc.toFixed(2)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem;"><span>Impuestos</span><span>$${iva.toFixed(2)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.4rem; margin-top:5px;"><span>TOTAL</span><span>${lastOrderTotal}</span></div>
             </div>
             
             <p class="text-center" style="margin-top:20px; font-size:1.1rem;">¡Gracias por su preferencia!</p>
@@ -774,43 +828,54 @@ tabOrders.onclick = () => {
     tabJournal.classList.remove('active');
     ordersView.style.display = 'block';
     journalView.style.display = 'none';
-    renderOrderHistory();
+    orderHistoryList.textContent = 'El historial de clientes no está habilitado en esta versión.';
 };
-
-function saveOrderToHistory(order) {
-    let history = JSON.parse(localStorage.getItem('tgr_orders') || '[]');
-    history.unshift(order);
-    localStorage.setItem('tgr_orders', JSON.stringify(history));
-}
-
-function renderOrderHistory() {
-    let history = JSON.parse(localStorage.getItem('tgr_orders') || '[]');
-    if (history.length === 0) {
-        orderHistoryList.innerHTML = '<p style="color:var(--color-beige); opacity:0.5;">No hay pedidos recientes.</p>';
-        return;
-    }
-    
-    orderHistoryList.innerHTML = '';
-    history.forEach(order => {
-        orderHistoryList.innerHTML += `
-            <div class="journal-item">
-                <div class="journal-header">
-                    <h4>${order.id}</h4>
-                    <span>${order.date}</span>
-                </div>
-                <div class="order-items">${order.items}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="order-status">${order.status}</span>
-                    <span style="color:var(--color-gold); font-family:var(--font-heading); font-size:1.2rem;">${order.total}</span>
-                </div>
-                <button class="login-text-btn w-100" style="margin-top:15px; width:100%;" onclick="showToast('Agregando a la cuenta...')">Pedir de nuevo</button>
-            </div>
-        `;
-    });
-}
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
+
+// Accesibilidad común de modales: foco inicial, Escape y ciclo de Tab.
+let modalReturnFocus = null;
+const visibleModal = () => [...document.querySelectorAll('.modal-overlay')]
+    .find(modal => !modal.hidden && (modal.classList.contains('active') || modal.classList.contains('open')));
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    new MutationObserver(() => {
+        const opened = !modal.hidden && (modal.classList.contains('active') || modal.classList.contains('open'));
+        modal.setAttribute('aria-hidden', opened ? 'false' : 'true');
+        if (opened) {
+            if (!modal.contains(document.activeElement)) modalReturnFocus = document.activeElement;
+            setTimeout(() => modal.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus(), 0);
+        }
+    }).observe(modal, { attributes: true, attributeFilter: ['class', 'hidden'] });
+});
+document.addEventListener('keydown', event => {
+    const modal = visibleModal();
+    if (!modal) return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        const closer = modal.querySelector('.close-modal, .close-btn, [id^="btn-cancel"]');
+        if (closer) closer.click();
+        else {
+            modal.classList.remove('active', 'open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        modalReturnFocus?.focus?.();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = [...modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter(element => element.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+});
     initMenu();
     
     // Smooth scroll para los enlaces de la navegación
@@ -880,63 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Reservation Form Handler
-    const resForm = document.getElementById('reservation-form');
-    const resBtn = resForm ? resForm.querySelector('button[type="submit"]') : null;
-    
-    if (resForm) {
-        resForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('res-name').value;
-            const email = document.getElementById('res-email').value;
-            const date = document.getElementById('res-date').value;
-            const time = document.getElementById('res-time').value;
-            const guests = document.getElementById('res-guests').value;
-            
-            if (!name || !email || !date || !time || !guests) {
-                return showToast('Por favor, complete todos los campos de la reserva.');
-            }
-            
-            if (resBtn) {
-                resBtn.disabled = true;
-                resBtn.textContent = 'Procesando...';
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/reservations`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ name, email, date, time, guests })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(`Estimado/a ${name},\nSu solicitud de reserva para el ${date} a las ${time} ha sido recibida y registrada en el Staff Portal.\nUn concierge se pondrá en contacto pronto para confirmar.`);
-                    resForm.reset();
-                    
-                    // Resetear los selectores custom
-                    const timeDisplay = document.getElementById('display-time');
-                    if (timeDisplay) timeDisplay.textContent = 'Seleccione una hora';
-                    const guestsDisplay = document.getElementById('display-guests');
-                    if (guestsDisplay) guestsDisplay.textContent = 'Cantidad de Personas';
-                } else {
-                    showToast('Error: ' + (result.message || 'No se pudo crear la reserva.'));
-                }
-            } catch (error) {
-                console.error('Error Reserva:', error);
-                showToast('Ocurrió un error de conexión al solicitar la reserva.');
-            } finally {
-                if (resBtn) {
-                    resBtn.disabled = false;
-                    resBtn.textContent = 'Solicitar Reserva VIP';
-                }
-            }
-        };
-    }
 });
 
 /* ==========================================
@@ -949,21 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputTime = document.getElementById('res-time');
     const wrapperTime = document.getElementById('wrapper-time');
     
-    if (dropdownTime) {
-        let timeHtml = '';
-        let startHour = 7;
-        for(let i = 0; i < 11; i++) {
-            let hour = startHour + Math.floor(i/2);
-            let mins = i % 2 === 0 ? '00' : '30';
-            let ampm = hour >= 12 ? 'p. m.' : 'a. m.';
-            let displayHour = hour > 12 ? hour - 12 : hour;
-            displayHour = displayHour < 10 ? '0' + displayHour : displayHour;
-            let timeString = `${displayHour}:${mins} ${ampm}`;
-            
-            timeHtml += `<div class="dropdown-option" data-value="${timeString}">${timeString}</div>`;
-        }
-        dropdownTime.innerHTML = timeHtml;
-    }
+    if (dropdownTime) dropdownTime.innerHTML = '<div class="dropdown-empty">Elige fecha, personas y área</div>';
 
     // 2. Setup Guests Options
     const displayGuests = document.getElementById('display-guests');
@@ -1046,6 +1040,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentDate = new Date();
     let selectedDate = null;
+    let reservationAttemptKey = null;
     const today = new Date();
     today.setHours(0,0,0,0);
 
@@ -1097,6 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     displayDate.textContent = displayDateString;
                     inputDate.value = isoDate;
+                    inputDate.dispatchEvent(new Event('change'));
                     document.getElementById('error-res-date').style.display = 'none';
                     document.getElementById('toggle-date').style.borderColor = 'rgba(255,253,208,0.2)';
                     
@@ -1130,6 +1126,50 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     }
 
+    const inputArea = document.getElementById('res-area');
+    const displayArea = document.getElementById('display-area');
+    const dropdownArea = document.getElementById('dropdown-area');
+    const availabilityStatus = document.getElementById('reservation-availability-status');
+    let availableAreas = [];
+    let availabilityController = null;
+
+    const resetTimes = () => {
+        inputTime.value = '';
+        displayTime.textContent = 'Seleccionar Hora';
+        dropdownTime.innerHTML = '<div class="dropdown-empty">Elige un área disponible</div>';
+    };
+    const renderTimesForArea = () => {
+        resetTimes();
+        const area = availableAreas.find(item => String(item.id) === String(inputArea.value));
+        if (!area) return;
+        dropdownTime.innerHTML = area.available_slots.map(time => {
+            const [hours, minutes] = time.split(':').map(Number);
+            const label = new Date(2000, 0, 1, hours, minutes).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            return `<div class="dropdown-option" data-value="${escapeHtml(time)}">${escapeHtml(label)}</div>`;
+        }).join('') || '<div class="dropdown-empty">Sin horarios disponibles</div>';
+    };
+    const loadAvailability = async () => {
+        inputArea.value = ''; displayArea.textContent = 'Área preferida'; resetTimes();
+        if (!inputDate.value || !inputGuests.value) {
+            dropdownArea.innerHTML = '<div class="dropdown-empty">Elige fecha y personas</div>';
+            availabilityStatus.textContent = '';
+            return;
+        }
+        availabilityController?.abort(); availabilityController = new AbortController();
+        availabilityStatus.textContent = 'Consultando disponibilidad real…';
+        try {
+            const response = await fetch(`${API_URL}/reservation-availability?date=${encodeURIComponent(inputDate.value)}&guests=${encodeURIComponent(inputGuests.value)}`, { headers: { Accept: 'application/json' }, signal: availabilityController.signal });
+            if (!response.ok) throw new Error('No se pudo consultar la disponibilidad.');
+            const data = await response.json(); availableAreas = Array.isArray(data.areas) ? data.areas : [];
+            dropdownArea.innerHTML = availableAreas.map(area => `<div class="dropdown-option" data-value="${Number(area.id)}">${escapeHtml(area.name)}</div>`).join('') || '<div class="dropdown-empty">No hay áreas disponibles para esa fecha y capacidad</div>';
+            availabilityStatus.textContent = availableAreas.length ? `${availableAreas.length} área(s) con horarios disponibles.` : 'No encontramos capacidad; prueba otra fecha o cantidad.';
+            if (availableAreas.length === 1) { inputArea.value = String(availableAreas[0].id); displayArea.textContent = availableAreas[0].name; renderTimesForArea(); }
+        } catch (error) { if (error.name !== 'AbortError') availabilityStatus.textContent = error.message; }
+    };
+    inputDate.addEventListener('change', loadAvailability);
+    inputGuests.addEventListener('change', loadAvailability);
+    inputArea.addEventListener('change', renderTimesForArea);
+
     // 7. Form Validation Override
     const resForm = document.getElementById('reservation-form');
     if (resForm) {
@@ -1138,6 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const nameEl = document.getElementById('res-name');
             const emailEl = document.getElementById('res-email');
+            const phoneEl = document.getElementById('res-phone');
             let hasError = false;
 
             const resetError = (el, errorId) => {
@@ -1153,9 +1194,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset
             resetError(nameEl, 'error-res-name');
             resetError(emailEl, 'error-res-email');
+            resetError(phoneEl, 'error-res-phone');
             resetError(document.getElementById('toggle-date'), 'error-res-date');
             resetError(document.getElementById('toggle-time'), 'error-res-time');
             resetError(document.getElementById('toggle-guests'), 'error-res-guests');
+            resetError(document.getElementById('toggle-area'), 'error-res-area');
 
             // Name
             if (!nameEl.value.trim()) showError(nameEl, 'error-res-name');
@@ -1163,6 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(emailEl.value.trim())) showError(emailEl, 'error-res-email');
+            if (!/^[0-9+()\-\s]{7,30}$/.test(phoneEl.value.trim())) showError(phoneEl, 'error-res-phone');
 
             // Date
             if (!inputDate.value) showError(document.getElementById('toggle-date'), 'error-res-date');
@@ -1172,6 +1216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Guests
             if (!inputGuests.value) showError(document.getElementById('toggle-guests'), 'error-res-guests');
+            if (!inputArea.value) showError(document.getElementById('toggle-area'), 'error-res-area');
 
             if (!hasError) {
                 // Submit to Laravel Backend
@@ -1180,18 +1225,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnSubmit.disabled = true;
                 
                 const reservationData = {
+                    service_area_id: parseInt(inputArea.value),
                     name: nameEl.value.trim(),
                     email: emailEl.value.trim(),
+                    phone: phoneEl.value.trim(),
                     date: inputDate.value,
                     time: inputTime.value,
                     guests: parseInt(inputGuests.value)
                 };
 
-                fetch('http://127.0.0.1:8000/api/reservations', {
+                reservationAttemptKey ??= window.crypto?.randomUUID?.()
+                    || `reservation-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+                fetch(`${API_URL}/reservations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Idempotency-Key': reservationAttemptKey,
                     },
                     body: JSON.stringify(reservationData)
                 })
@@ -1200,15 +1251,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    showToast('¡Su mesa ha sido reservada con éxito!');
+                    reservationAttemptKey = null;
+                    showToast('Solicitud recibida. El personal confirmará su reservación.');
                     resForm.reset();
                     // Reset dropdowns
                     displayDate.textContent = 'Seleccionar Fecha';
                     displayTime.textContent = 'Seleccionar Hora';
                     displayGuests.textContent = 'Cantidad de personas';
+                    displayArea.textContent = 'Área preferida';
                     inputDate.value = '';
                     inputTime.value = '';
                     inputGuests.value = '';
+                    inputArea.value = '';
+                    dropdownArea.innerHTML = '<div class="dropdown-empty">Elige fecha y personas</div>';
+                    resetTimes();
                     selectedDate = null;
                     renderCalendar();
                 })

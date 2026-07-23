@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
@@ -20,12 +20,11 @@
                 <li><a href="#hero">Inicio</a></li>
                 <li><a href="#featured">Especialidades</a></li>
                 <li><a href="#menu">Nuestro Menú</a></li>
-                <li><a href="#subscriptions">Suscripciones</a></li>
                 <li><a href="#about">La Experiencia</a></li>
-                <li><a href="#reservation">Reserva</a></li>
+                <li><a href="#reservation">Reservar</a></li>
             </ul>
             <div class="nav-actions">
-                <button id="btn-login-modal" class="login-text-btn">MEMBRESÍA</button>
+                <button id="btn-login-modal" class="login-text-btn" hidden aria-hidden="true">MEMBRESÍA</button>
             </div>
         </div>
     </nav>
@@ -101,7 +100,7 @@
     </section>
 
     <!-- 4. Subscriptions Section -->
-    <section id="subscriptions" class="subscriptions-section section-padding">
+    <section id="subscriptions" class="subscriptions-section section-padding" hidden aria-hidden="true">
         <div class="container">
             <h2 class="section-title">Club de Suscriptores</h2>
             <p class="section-subtitle">Reciba la excelencia del tueste artesanal en la puerta de su hogar cada mes.</p>
@@ -115,7 +114,7 @@
                         <li>✓ Envío prioritario gratis</li>
                         <li>✓ 5% de descuento en el local</li>
                     </ul>
-                    <button class="btn-primary w-100" onclick="showToast('Suscripción iniciada correctamente.')">Suscribirse</button>
+                    <button class="btn-primary w-100" disabled>Próximamente</button>
                 </div>
                 
                 <div class="sub-card sub-card-gold">
@@ -128,7 +127,7 @@
                         <li>✓ Invitación a catas privadas</li>
                         <li>✓ 15% de descuento en el local</li>
                     </ul>
-                    <button class="btn-primary w-100" onclick="showToast('Solicitud VIP enviada correctamente.')">Solicitar Membresía VIP</button>
+                    <button class="btn-primary w-100" disabled>Próximamente</button>
                 </div>
             </div>
         </div>
@@ -177,6 +176,10 @@
                         <input type="email" id="res-email" class="reservation-input" placeholder="Correo Electrónico">
                         <span class="form-error" id="error-res-email">Ingresa un correo válido.</span>
                     </div>
+                    <div class="reservation-group">
+                        <input type="tel" id="res-phone" class="reservation-input" placeholder="Teléfono de contacto">
+                        <span class="form-error" id="error-res-phone">Ingresa un teléfono válido.</span>
+                    </div>
                     
                     <div class="form-row">
                         <!-- Datepicker -->
@@ -208,9 +211,7 @@
                                 <span id="display-time">Seleccionar Hora</span>
                                 <span class="dropdown-arrow">▼</span>
                             </div>
-                            <div class="custom-dropdown-options" id="dropdown-time">
-                                <!-- JS Render -->
-                            </div>
+                            <div class="custom-dropdown-options" id="dropdown-time"><div class="dropdown-empty">Elige fecha, personas y área</div></div>
                             <input type="hidden" id="res-time">
                             <span class="form-error" id="error-res-time">Seleccione una hora.</span>
                         </div>
@@ -228,11 +229,19 @@
                             <div class="dropdown-option" data-value="3">Para 3 personas</div>
                             <div class="dropdown-option" data-value="4">Para 4 personas</div>
                             <div class="dropdown-option" data-value="5">Para 5 personas</div>
-                            <div class="dropdown-option" data-value="6">Para 6 personas</div>
+                            <div class="dropdown-option" data-value="6">Para 6 personas</div><div class="dropdown-option" data-value="7">Para 7 personas</div><div class="dropdown-option" data-value="8">Para 8 personas</div><div class="dropdown-option" data-value="9">Para 9 personas</div><div class="dropdown-option" data-value="10">Para 10 personas</div><div class="dropdown-option" data-value="12">Para 12 personas</div><div class="dropdown-option" data-value="15">Para 15 personas</div><div class="dropdown-option" data-value="20">Para 20 personas</div>
                         </div>
                         <input type="hidden" id="res-guests">
                         <span class="form-error" id="error-res-guests">Seleccione cantidad de personas.</span>
                     </div>
+
+                    <div class="reservation-group custom-select-wrapper" id="wrapper-area">
+                        <div class="custom-dropdown-toggle reservation-input" id="toggle-area"><span id="display-area">Área preferida</span><span class="dropdown-arrow">▼</span></div>
+                        <div class="custom-dropdown-options" id="dropdown-area"><div class="dropdown-empty">Elige fecha y personas</div></div>
+                        <input type="hidden" id="res-area">
+                        <span class="form-error" id="error-res-area">Seleccione un área disponible.</span>
+                    </div>
+                    <p id="reservation-availability-status" class="reservation-availability-status" role="status" aria-live="polite"></p>
 
                     <button type="submit" class="btn-primary w-100" id="btn-submit-reservation">Solicitar Reserva</button>
                 </form>
@@ -246,25 +255,27 @@
             <div class="footer-brand">
                 <h2>TGR</h2>
                 <p>The Gentlemen's Roast</p>
+                <p class="demo-data-notice">Ambiente demostrativo: la información comercial todavía no corresponde a un establecimiento real.</p>
             </div>
             <div class="footer-info">
                 <h3>Ubicación</h3>
-                <p>Av. Principal de la Elegancia 123</p>
-                <p>Distrito Financiero</p>
+                <p>Av. del Café 100, Col. Centro</p>
+                <p>Ciudad de México, C.P. 06000</p>
             </div>
             <div class="footer-info">
                 <h3>Horarios</h3>
-                <p>Lunes - Sábado: 7am - 10pm</p>
-                <p>Domingo: Cerrado</p>
+                <p>Lunes - sábado: 07:00–22:00</p>
+                <p>Domingo: 08:00–18:00</p>
             </div>
             <div class="footer-social">
                 <h3>Contacto</h3>
-                <p>contacto@thegentlemensroast.com</p>
-                <p>+1 234 567 8900</p>
+                <p><a href="mailto:contacto.pruebas@tgr.example">contacto.pruebas@tgr.example</a></p>
+                <p><a href="tel:+525500000000">+52 55 0000 0000</a></p>
+                <p><a class="footer-legal-link" href="privacy.html">Aviso de privacidad de pruebas</a></p>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 The Gentlemen's Roast. Todos los derechos reservados.</p>
+            <p>&copy; 2026 The Gentlemen's Roast — demostración académica.</p>
         </div>
     </footer>
 
@@ -278,7 +289,7 @@
     <div class="cart-sidebar" id="cart-sidebar">
         <div class="cart-sidebar-header">
             <h2>Su Cuenta</h2>
-            <button id="close-cart-btn" class="close-btn">&times;</button>
+            <button id="close-cart-btn" class="close-btn" aria-label="Cerrar carrito">&times;</button>
         </div>
         <div class="cart-sidebar-body">
             
@@ -319,15 +330,15 @@
                 <!-- Vista Expandida -->
                 <div id="checkout-form-full" class="cart-checkout-options">
                     <div class="checkout-group">
-                        <label>Nombre y Apellido:</label>
+                        <label for="checkout-name">Nombre y Apellido:</label>
                         <input type="text" id="checkout-name" class="modal-input" placeholder="Ej. Arthur Shelby">
                     </div>
                     <div class="checkout-group">
-                        <label>Teléfono:</label>
+                        <label for="checkout-phone">Teléfono:</label>
                         <input type="tel" id="checkout-phone" class="modal-input" placeholder="Ej. 555-1234-5678">
                     </div>
                     <div class="checkout-group">
-                        <label>Correo Electrónico:</label>
+                        <label for="checkout-email">Correo Electrónico (opcional):</label>
                         <input type="email" id="checkout-email" class="modal-input" placeholder="correo@ejemplo.com">
                     </div>
                     
@@ -340,29 +351,16 @@
                         <div class="custom-dropdown-options" id="dropdown-checkout-service">
                             <div class="dropdown-option selected" data-value="local">Consumo en Local</div>
                             <div class="dropdown-option" data-value="pickup">Para Llevar (Pick-up)</div>
-                            <div class="dropdown-option" data-value="delivery">Envío a Domicilio</div>
                         </div>
                         <input type="hidden" id="checkout-service" value="local">
                     </div>
                     
-                    <div class="checkout-group" id="checkout-address-group" style="display: none;">
-                        <label>Dirección de Envío:</label>
-                        <input type="text" id="checkout-address" class="modal-input" placeholder="Calle, número, ciudad">
+                    <div class="checkout-group" id="wrapper-checkout-payment">
+                        <label>Pago:</label>
+                        <p class="modal-input" style="padding: 15px; margin-top:5px; margin-bottom: 0;">Pago pendiente al recoger en caja</p>
+                        <input type="hidden" id="checkout-payment" value="pay_at_pickup">
                     </div>
 
-                    <div class="checkout-group custom-select-wrapper" id="wrapper-checkout-payment">
-                        <label>Pago:</label>
-                        <div class="custom-dropdown-toggle modal-input" id="toggle-checkout-payment" style="padding: 15px; margin-top:5px; margin-bottom: 0;">
-                            <span id="display-checkout-payment">Tarjeta Crédito/Débito</span>
-                            <span class="dropdown-arrow">▼</span>
-                        </div>
-                        <div class="custom-dropdown-options" id="dropdown-checkout-payment">
-                            <div class="dropdown-option selected" data-value="card">Tarjeta Crédito/Débito</div>
-                            <div class="dropdown-option" data-value="cash">Efectivo al recibir</div>
-                            <div class="dropdown-option" data-value="apple">Billetera Digital (Apple/Google)</div>
-                        </div>
-                        <input type="hidden" id="checkout-payment" value="card">
-                    </div>
                 </div>
             </div>
 
@@ -377,11 +375,11 @@
     </div>
 
     <!-- Addon Modal -->
-    <div class="modal-overlay" id="addon-modal">
+    <div class="modal-overlay" id="addon-modal" role="dialog" aria-modal="true" aria-label="Personalizar producto" aria-hidden="true">
         <div class="modal-box">
             <div class="modal-header">
                 <h3 id="modal-product-name">Producto</h3>
-                <button id="btn-cancel-addon" class="close-btn">&times;</button>
+                <button id="btn-cancel-addon" class="close-btn" aria-label="Cerrar personalización">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="modal-tasting-notes" class="tasting-notes-bar">
@@ -420,11 +418,11 @@
     </div>
 
     <!-- Login/Register Modal -->
-    <div class="modal-overlay" id="login-modal">
+    <div class="modal-overlay" id="login-modal" hidden aria-hidden="true">
         <div class="modal-box login-box">
             <div class="modal-header">
                 <h3>The Gentlemen's Club</h3>
-                <button id="btn-close-login" class="close-btn">&times;</button>
+                <button id="btn-close-login" class="close-btn" aria-label="Cerrar inicio de sesión">&times;</button>
             </div>
             <div class="modal-body text-center">
                 <p class="modal-subtitle" style="text-align:center;">Membresía Exclusiva</p>
@@ -441,11 +439,11 @@
     </div>
 
     <!-- User Profile / Tasting Journal Modal -->
-    <div class="modal-overlay" id="profile-modal">
+    <div class="modal-overlay" id="profile-modal" hidden aria-hidden="true">
         <div class="modal-box profile-box">
             <div class="modal-header">
                 <h3>Mi Diario de Degustación</h3>
-                <button id="btn-close-profile" class="close-btn">&times;</button>
+                <button id="btn-close-profile" class="close-btn" aria-label="Cerrar perfil">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="profile-tabs">
@@ -510,35 +508,37 @@
     </div>
 
     <!-- Order Success Modal -->
-    <div class="modal-overlay" id="success-modal">
+    <div class="modal-overlay" id="success-modal" role="dialog" aria-modal="true" aria-label="Pedido registrado" aria-hidden="true">
         <div class="modal-box text-center" style="border-color:var(--color-gold);">
             <div class="modal-header" style="border:none; padding-bottom:0;">
                 <h3>&nbsp;</h3>
-                <button id="btn-close-success" class="close-btn">&times;</button>
+                <button id="btn-close-success" class="close-btn" aria-label="Cerrar confirmación del pedido">&times;</button>
             </div>
             <div class="modal-body">
                 <div style="font-size: 4rem; margin-bottom: 15px;">🎩</div>
-                <h2 style="color:var(--color-gold); font-family:var(--font-heading); margin-bottom: 10px;">¡Pedido Confirmado!</h2>
-                <p style="color:var(--color-beige); margin-bottom: 20px;">Gracias por su preferencia. Su solicitud está en manos de nuestros expertos baristas.</p>
+                <h2 style="color:var(--color-gold); font-family:var(--font-heading); margin-bottom: 10px;">¡Pedido Registrado!</h2>
+                <p style="color:var(--color-beige); margin-bottom: 20px;">Presenta tu folio y realiza el pago al recoger.</p>
                 
                 <div style="background: rgba(26, 17, 10, 0.8); border: 1px dashed rgba(212, 175, 55, 0.3); padding: 20px; border-radius: 4px; margin-bottom: 25px; text-align: left;">
                     <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Orden #:</strong> <span id="success-order-id" style="color:var(--color-gold);">TGR-0000</span></p>
-                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Total Pagado:</strong> <span id="success-order-total">$0.00</span></p>
-                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Tiempo Estimado:</strong> 15-20 minutos</p>
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Total del pedido:</strong> <span id="success-order-total">$0.00</span></p>
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Pago:</strong> Pendiente al recoger</p>
+                    <p style="color:var(--color-cream); margin-bottom: 5px;"><strong>Estado:</strong> <span id="success-order-status">Pendiente</span></p>
                 </div>
                 
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <button class="btn-outline w-100" id="btn-print-ticket" style="padding:15px; margin-bottom:5px;">🖨️ Imprimir Ticket de Compra</button>
+                    <button class="btn-outline w-100" id="btn-track-order" style="padding:15px;">Consultar estado</button>
                     <button class="btn-primary w-100" id="btn-success-close">Volver al Inicio</button>
-                    <button class="login-text-btn w-100" style="padding:15px; width:100%;" onclick="window.open('https://wa.me/1234567890', '_blank')">Contactar al Concierge (WhatsApp)</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Toast Notifications Container -->
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="js/app.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/app.js?v=2"></script>
 </body>
 </html>
